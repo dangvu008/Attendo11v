@@ -43,7 +43,7 @@ export default function Notes() {
     loadShifts();
   }, []);
 
-  const loadNotes = async () => {
+  const loadNotes = useCallback(async () => {
     try {
       const allNotes = await getNotes();
 
@@ -101,7 +101,7 @@ export default function Notes() {
     } catch (error) {
       console.error("Failed to load notes:", error);
     }
-  };
+  }, [currentShift, currentDayOfWeek, maxNotesToShow]);
 
   useFocusEffect(
     useCallback(() => {

@@ -151,31 +151,34 @@ export default function WeatherForecast() {
     }
   };
 
-  const loadWeatherData = async (locationData) => {
-    try {
-      setLoading(true);
-      setError(null);
+  const loadWeatherData = useCallback(
+    async (locationData) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      if (!locationData) {
-        throw new Error("No location data available");
+        if (!locationData) {
+          throw new Error("No location data available");
+        }
+
+        const data = await fetchWeatherData(
+          locationData.latitude,
+          locationData.longitude
+        );
+        setWeatherData(data);
+      } catch (error) {
+        console.error("Failed to load weather data:", error);
+        setError(t("weatherLoadError"));
+
+        // Fall back to mock data
+        setWeatherData(generateMockWeatherData());
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-
-      const data = await fetchWeatherData(
-        locationData.latitude,
-        locationData.longitude
-      );
-      setWeatherData(data);
-    } catch (error) {
-      console.error("Failed to load weather data:", error);
-      setError(t("weatherLoadError"));
-
-      // Fall back to mock data
-      setWeatherData(generateMockWeatherData());
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+    },
+    [t, setLoading, setError, setWeatherData, setRefreshing]
+  );
 
   const refreshWeatherData = useCallback(async () => {
     setRefreshing(true);

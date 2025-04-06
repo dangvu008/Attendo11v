@@ -150,9 +150,9 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
   };
 
   // Helper function to convert time to minutes for comparison
-  const timeToMinutes = (date) => {
+  const timeToMinutes = useCallback((date) => {
     return date.getHours() * 60 + date.getMinutes();
-  };
+  }, []);
 
   // Helper function to calculate time difference in minutes, handling overnight shifts
   const getTimeDifferenceInMinutes = useCallback(
