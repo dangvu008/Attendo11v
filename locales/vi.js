@@ -141,6 +141,12 @@ export const vi = {
   alertCold: "Cảnh báo thời tiết lạnh",
   alertHeat: "Cảnh báo thời tiết nóng",
   alertStorm: "Cảnh báo bão",
+  locationPermissionDenied: "Quyền truy cập vị trí bị từ chối",
+  showDetails: "Xem chi tiết",
+  hideDetails: "Ẩn chi tiết",
+  description: "Mô tả",
+  humidity: "Độ ẩm",
+  windSpeed: "Tốc độ gió",
 
   // Weather conditions
   clear: "Quang đãng",

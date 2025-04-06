@@ -7,155 +7,177 @@ import { parseISO, differenceInMinutes, format } from "date-fns"
  * @returns {Object} Trạng thái công đã tính toán
  */
 export const calculateWorkStatus = (logs, shift) => {
-  if (!logs || !shift) {
-    return {
-      status: "unknown", // Chưa cập nhật
-      checkInTime: null,
-      checkOutTime: null,
-      totalWorkTime: 0,
-      overtime: 0,
-      remarks: "",
+  try {
+    if (!logs || !shift) {
+      console.log("[WorkStatusCalculator] Missing logs or shift data")
+      return {
+        status: "unknown", // Chưa cập nhật
+        checkInTime: null,
+        checkOutTime: null,
+        totalWorkTime: 0,
+        overtime: 0,
+        remarks: "",
+      }
     }
-  }
 
-  // Tìm các log chấm công
-  const goWorkLog = logs.find((log) => log.type === "go_work")
-  const checkInLog = logs.find((log) => log.type === "check_in")
-  const checkOutLog = logs.find((log) => log.type === "check_out")
-  const punchLog = logs.find((log) => log.type === "punch")
-  const completeLog = logs.find((log) => log.type === "complete")
+    console.log(`[WorkStatusCalculator] Calculating status for ${logs.length} logs`)
 
-  // Kiểm tra trạng thái hoàn tất
-  const isCompleted =
-    logs.some((log) => log.type === "complete") ||
-    (checkOutLog && checkInLog) ||
-    (goWorkLog && logs.length === 1 && shift.onlyGoWorkMode)
+    // Tìm các log chấm công
+    const goWorkLog = logs.find((log) => log.type === "go_work")
+    const checkInLog = logs.find((log) => log.type === "check_in")
+    const checkOutLog = logs.find((log) => log.type === "check_out")
+    const punchLog = logs.find((log) => log.type === "punch")
+    const completeLog = logs.find((log) => log.type === "complete")
 
-  // Parse thời gian từ shift
-  const parseShiftTime = (timeStr) => {
-    const [hours, minutes] = timeStr.split(":").map(Number)
-    const date = new Date()
-    date.setHours(hours, minutes, 0, 0)
-    return date
-  }
+    // Kiểm tra trạng thái hoàn tất
+    const isCompleted =
+      logs.some((log) => log.type === "complete") ||
+      (checkOutLog && checkInLog) ||
+      (goWorkLog && logs.length === 1 && shift.onlyGoWorkMode)
 
-  const startTime = parseShiftTime(shift.startTime)
-  const officeEndTime = parseShiftTime(shift.officeEndTime)
-  const endTime = parseShiftTime(shift.endTime)
+    // Parse thời gian từ shift
+    const parseShiftTime = (timeStr) => {
+      try {
+        const [hours, minutes] = timeStr.split(":").map(Number)
+        const date = new Date()
+        date.setHours(hours, minutes, 0, 0)
+        return date
+      } catch (error) {
+        console.error(`[WorkStatusCalculator] Error parsing time: ${timeStr}`, error)
+        // Return current time as fallback
+        return new Date()
+      }
+    }
 
-  // Nếu đã hoàn tất hoặc chỉ có nút "Đi làm" và đã bấm
-  if (isCompleted) {
-    // Xác định thời gian check-in và check-out
-    let actualCheckInTime, actualCheckOutTime
+    const startTime = parseShiftTime(shift.startTime)
+    const officeEndTime = parseShiftTime(shift.officeEndTime || shift.endTime) // Fallback to endTime if officeEndTime is not available
+    const endTime = parseShiftTime(shift.endTime)
 
-    if (checkInLog && checkOutLog) {
-      actualCheckInTime = parseISO(checkInLog.timestamp)
-      actualCheckOutTime = parseISO(checkOutLog.timestamp)
-    } else if (goWorkLog && shift.onlyGoWorkMode) {
-      // Nếu chỉ có nút "Đi làm" và đã bấm
-      actualCheckInTime = startTime
-      actualCheckOutTime = endTime
-    } else {
-      // Trường hợp khác, sử dụng thời gian ca làm việc
-      actualCheckInTime = startTime
-      actualCheckOutTime = endTime
+    // Nếu đã hoàn tất hoặc chỉ có nút "Đi làm" và đã bấm
+    if (isCompleted) {
+      // Xác định thời gian check-in và check-out
+      let actualCheckInTime, actualCheckOutTime
+
+      if (checkInLog && checkOutLog) {
+        actualCheckInTime = parseISO(checkInLog.timestamp)
+        actualCheckOutTime = parseISO(checkOutLog.timestamp)
+      } else if (goWorkLog && shift.onlyGoWorkMode) {
+        // Nếu chỉ có nút "Đi làm" và đã bấm
+        actualCheckInTime = startTime
+        actualCheckOutTime = endTime
+      } else {
+        // Trường hợp khác, sử dụng thời gian ca làm việc
+        actualCheckInTime = startTime
+        actualCheckOutTime = endTime
+      }
+
+      // Tính OT
+      let overtimeMinutes = 0
+      if (actualCheckOutTime > officeEndTime) {
+        overtimeMinutes = differenceInMinutes(actualCheckOutTime, officeEndTime)
+        overtimeMinutes = Math.max(0, overtimeMinutes) // Đảm bảo không âm
+      }
+
+      // Tính tổng thời gian làm việc
+      const totalMinutes = differenceInMinutes(endTime, startTime)
+
+      // Chuyển đổi sang giờ
+      const totalWorkTime = Number.parseFloat((totalMinutes / 60).toFixed(2))
+      const overtime = Number.parseFloat((overtimeMinutes / 60).toFixed(2))
+
+      return {
+        status: "complete", // Đủ công
+        checkInTime: format(actualCheckInTime, "HH:mm:ss"),
+        checkOutTime: format(actualCheckOutTime, "HH:mm:ss"),
+        totalWorkTime,
+        overtime,
+        remarks: overtime > 0 ? `OT ${overtime.toFixed(2)}h.` : "",
+      }
+    }
+
+    // Nếu không hoàn tất, xử lý như trước
+    if (!checkInLog || !checkOutLog) {
+      return {
+        status: "incomplete", // Thiếu chấm công
+        checkInTime: checkInLog ? format(parseISO(checkInLog.timestamp), "HH:mm:ss") : null,
+        checkOutTime: checkOutLog ? format(parseISO(checkOutLog.timestamp), "HH:mm:ss") : null,
+        totalWorkTime: 0,
+        overtime: 0,
+        remarks: "Thiếu chấm công",
+      }
+    }
+
+    // Parse thời gian check-in/check-out
+    const checkInTime = parseISO(checkInLog.timestamp)
+    const checkOutTime = parseISO(checkOutLog.timestamp)
+
+    // Tính phạt đi muộn
+    let lateMinutes = 0
+    if (checkInTime > startTime) {
+      lateMinutes = Math.ceil(differenceInMinutes(checkInTime, startTime) / 30) * 30
+    }
+
+    // Tính phạt về sớm
+    let earlyMinutes = 0
+    if (checkOutTime < officeEndTime) {
+      earlyMinutes = Math.ceil(differenceInMinutes(officeEndTime, checkOutTime) / 30) * 30
     }
 
     // Tính OT
     let overtimeMinutes = 0
-    if (actualCheckOutTime > officeEndTime) {
-      overtimeMinutes = differenceInMinutes(actualCheckOutTime, officeEndTime)
+    if (checkOutTime > officeEndTime) {
+      const maxEndTime = endTime > checkOutTime ? checkOutTime : endTime
+      overtimeMinutes = differenceInMinutes(maxEndTime, officeEndTime)
       overtimeMinutes = Math.max(0, overtimeMinutes) // Đảm bảo không âm
     }
 
     // Tính tổng thời gian làm việc
-    const totalMinutes = differenceInMinutes(endTime, startTime)
+    const totalMinutes = differenceInMinutes(checkOutTime, checkInTime)
+    const totalWorkMinutes = Math.max(0, totalMinutes - lateMinutes - earlyMinutes)
 
     // Chuyển đổi sang giờ
-    const totalWorkTime = Number.parseFloat((totalMinutes / 60).toFixed(2))
+    const totalWorkTime = Number.parseFloat((totalWorkMinutes / 60).toFixed(2))
     const overtime = Number.parseFloat((overtimeMinutes / 60).toFixed(2))
 
+    // Xác định trạng thái và ghi chú
+    let status = "complete" // Đủ công
+    let remarks = ""
+
+    if (lateMinutes > 0 || earlyMinutes > 0) {
+      status = "RV" // Vào muộn/Ra sớm
+
+      if (lateMinutes > 0) {
+        remarks += `Đi muộn ${lateMinutes} phút. `
+      }
+
+      if (earlyMinutes > 0) {
+        remarks += `Về sớm ${earlyMinutes} phút. `
+      }
+    }
+
+    if (overtime > 0) {
+      remarks += `OT ${overtime.toFixed(2)}h. `
+    }
+
     return {
-      status: "complete", // Đủ công
-      checkInTime: format(actualCheckInTime, "HH:mm:ss"),
-      checkOutTime: format(actualCheckOutTime, "HH:mm:ss"),
+      status,
+      checkInTime: format(checkInTime, "HH:mm:ss"),
+      checkOutTime: format(checkOutTime, "HH:mm:ss"),
       totalWorkTime,
       overtime,
-      remarks: overtime > 0 ? `OT ${overtime.toFixed(2)}h.` : "",
+      remarks: remarks.trim(),
     }
-  }
-
-  // Nếu không hoàn tất, xử lý như trước
-  if (!checkInLog || !checkOutLog) {
+  } catch (error) {
+    console.error("[WorkStatusCalculator] Error calculating work status:", error)
+    // Return a safe default in case of error
     return {
-      status: "incomplete", // Thiếu chấm công
-      checkInTime: checkInLog ? format(parseISO(checkInLog.timestamp), "HH:mm:ss") : null,
-      checkOutTime: checkOutLog ? format(parseISO(checkOutLog.timestamp), "HH:mm:ss") : null,
+      status: "unknown",
+      checkInTime: null,
+      checkOutTime: null,
       totalWorkTime: 0,
       overtime: 0,
-      remarks: "Thiếu chấm công",
+      remarks: "Lỗi tính toán trạng thái",
     }
-  }
-
-  // Parse thời gian check-in/check-out
-  const checkInTime = parseISO(checkInLog.timestamp)
-  const checkOutTime = parseISO(checkOutLog.timestamp)
-
-  // Tính phạt đi muộn
-  let lateMinutes = 0
-  if (checkInTime > startTime) {
-    lateMinutes = Math.ceil(differenceInMinutes(checkInTime, startTime) / 30) * 30
-  }
-
-  // Tính phạt về sớm
-  let earlyMinutes = 0
-  if (checkOutTime < officeEndTime) {
-    earlyMinutes = Math.ceil(differenceInMinutes(officeEndTime, checkOutTime) / 30) * 30
-  }
-
-  // Tính OT
-  let overtimeMinutes = 0
-  if (checkOutTime > officeEndTime) {
-    const maxEndTime = endTime > checkOutTime ? checkOutTime : endTime
-    overtimeMinutes = differenceInMinutes(maxEndTime, officeEndTime)
-    overtimeMinutes = Math.max(0, overtimeMinutes) // Đảm bảo không âm
-  }
-
-  // Tính tổng thời gian làm việc
-  const totalMinutes = differenceInMinutes(checkOutTime, checkInTime)
-  const totalWorkMinutes = Math.max(0, totalMinutes - lateMinutes - earlyMinutes)
-
-  // Chuyển đổi sang giờ
-  const totalWorkTime = Number.parseFloat((totalWorkMinutes / 60).toFixed(2))
-  const overtime = Number.parseFloat((overtimeMinutes / 60).toFixed(2))
-
-  // Xác định trạng thái và ghi chú
-  let status = "complete" // Đủ công
-  let remarks = ""
-
-  if (lateMinutes > 0 || earlyMinutes > 0) {
-    status = "RV" // Vào muộn/Ra sớm
-
-    if (lateMinutes > 0) {
-      remarks += `Đi muộn ${lateMinutes} phút. `
-    }
-
-    if (earlyMinutes > 0) {
-      remarks += `Về sớm ${earlyMinutes} phút. `
-    }
-  }
-
-  if (overtime > 0) {
-    remarks += `OT ${overtime.toFixed(2)}h. `
-  }
-
-  return {
-    status,
-    checkInTime: format(checkInTime, "HH:mm:ss"),
-    checkOutTime: format(checkOutTime, "HH:mm:ss"),
-    totalWorkTime,
-    overtime,
-    remarks: remarks.trim(),
   }
 }
 

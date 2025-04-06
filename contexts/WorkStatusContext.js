@@ -7,6 +7,7 @@ import { saveWorkLog, updateDailyWorkStatus } from "../utils/database"
 import { calculateWorkStatus } from "../utils/workStatusCalculator"
 import { useShift } from "./ShiftContext"
 import { cancelNotificationByType } from "../utils/notificationService"
+import * as Notifications from "expo-notifications"
 
 // Create context
 const WorkStatusContext = createContext()
@@ -84,21 +85,97 @@ export function WorkStatusProvider({ children }) {
     loadWorkStatus()
   }, [])
 
+  // Add a function to debug and fix notification issues
+  const debugNotifications = async () => {
+    try {
+      // Get all scheduled notifications
+      const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync()
+      console.log(`[WorkStatusContext] Currently scheduled notifications: ${scheduledNotifications.length}`)
+
+      // Log notification details for debugging
+      scheduledNotifications.forEach((notification, index) => {
+        console.log(`[WorkStatusContext] Notification ${index + 1}:`, {
+          id: notification.identifier,
+          title: notification.content.title,
+          body: notification.content.body,
+          triggerDate: notification.trigger.date,
+          data: notification.content.data,
+        })
+      })
+
+      // Check for duplicate notifications
+      const notificationIds = {}
+      const duplicates = []
+
+      scheduledNotifications.forEach((notification) => {
+        const title = notification.content.title
+        if (notificationIds[title]) {
+          duplicates.push(notification)
+        } else {
+          notificationIds[title] = notification
+        }
+      })
+
+      // Cancel duplicate notifications
+      if (duplicates.length > 0) {
+        console.log(`[WorkStatusContext] Found ${duplicates.length} duplicate notifications, canceling...`)
+        for (const notification of duplicates) {
+          await Notifications.cancelScheduledNotificationAsync(notification.identifier)
+        }
+      }
+
+      return {
+        total: scheduledNotifications.length,
+        duplicates: duplicates.length,
+        remaining: scheduledNotifications.length - duplicates.length,
+      }
+    } catch (error) {
+      console.error("[WorkStatusContext] Error debugging notifications:", error)
+      return { error: error.message }
+    }
+  }
+
+  // Add this to the WorkStatusProvider component
+  useEffect(() => {
+    // Debug notifications on startup
+    const checkNotifications = async () => {
+      try {
+        const result = await debugNotifications()
+        console.log("[WorkStatusContext] Notification check result:", result)
+      } catch (error) {
+        console.error("[WorkStatusContext] Error checking notifications:", error)
+      }
+    }
+
+    checkNotifications()
+  }, [])
+
   // Update work status
   const updateWorkStatus = async (action, timestamp) => {
     try {
+      console.log(`[WorkStatusContext] Updating work status: ${action}`)
       const today = format(new Date(), "yyyy-MM-dd")
       let newStatus = { ...workStatus, date: today }
 
       // Lưu log vào database
-      await saveWorkLog({
-        type: action,
-        timestamp: timestamp.toISOString(),
-        shiftId: currentShift?.id,
-      })
+      try {
+        await saveWorkLog({
+          type: action,
+          timestamp: timestamp.toISOString(),
+          shiftId: currentShift?.id,
+        })
+      } catch (dbError) {
+        console.error("[WorkStatusContext] Failed to save work log to database:", dbError)
+        // Continue execution even if database save fails
+      }
 
       // Hủy thông báo tương ứng
-      await cancelNotificationByType(action, today)
+      try {
+        await cancelNotificationByType(action, today)
+      } catch (notificationError) {
+        console.error("[WorkStatusContext] Failed to cancel notification:", notificationError)
+        // Continue execution even if notification cancellation fails
+      }
 
       // Cập nhật trạng thái
       switch (action) {
@@ -142,39 +219,44 @@ export function WorkStatusProvider({ children }) {
       setWorkStatus(newStatus)
 
       // Lấy tất cả logs của ngày hiện tại
-      const logsJson = await AsyncStorage.getItem(`attendo_work_logs_${today}`)
-      const logs = logsJson ? JSON.parse(logsJson) : []
+      try {
+        const logsJson = await AsyncStorage.getItem(`attendo_work_logs_${today}`)
+        const logs = logsJson ? JSON.parse(logsJson) : []
 
-      // Thêm log mới
-      logs.push({
-        type: action,
-        timestamp: timestamp.toISOString(),
-        shiftId: currentShift?.id,
-      })
+        // Thêm log mới
+        logs.push({
+          type: action,
+          timestamp: timestamp.toISOString(),
+          shiftId: currentShift?.id,
+        })
 
-      // Lưu logs
-      await AsyncStorage.setItem(`attendo_work_logs_${today}`, JSON.stringify(logs))
+        // Lưu logs
+        await AsyncStorage.setItem(`attendo_work_logs_${today}`, JSON.stringify(logs))
 
-      // Tính toán trạng thái công nếu đã check-in và check-out hoặc đã hoàn tất
-      if (action === "check_out" || action === "complete" || (action === "go_work" && currentShift?.onlyGoWorkMode)) {
-        // Kiểm tra xem có phải chế độ chỉ có nút "Đi làm" không
-        const userSettingsJson = await AsyncStorage.getItem("attendo_user_settings")
-        const userSettings = userSettingsJson ? JSON.parse(userSettingsJson) : { onlyGoWorkMode: false }
+        // Tính toán trạng thái công nếu đã check-in và check-out hoặc đã hoàn tất
+        if (action === "check_out" || action === "complete" || (action === "go_work" && currentShift?.onlyGoWorkMode)) {
+          // Kiểm tra xem có phải chế độ chỉ có nút "Đi làm" không
+          const userSettingsJson = await AsyncStorage.getItem("attendo_user_settings")
+          const userSettings = userSettingsJson ? JSON.parse(userSettingsJson) : { onlyGoWorkMode: false }
 
-        // Truyền thông tin chế độ nút vào ca làm việc
-        const shiftWithButtonMode = {
-          ...currentShift,
-          onlyGoWorkMode: userSettings.onlyGoWorkMode,
+          // Truyền thông tin chế độ nút vào ca làm việc
+          const shiftWithButtonMode = {
+            ...currentShift,
+            onlyGoWorkMode: userSettings.onlyGoWorkMode,
+          }
+
+          // Tính toán trạng thái công
+          const workStatusCalc = calculateWorkStatus(logs, shiftWithButtonMode)
+
+          // Cập nhật vào database
+          await updateDailyWorkStatus(today, workStatusCalc)
         }
-
-        // Tính toán trạng thái công
-        const workStatusCalc = calculateWorkStatus(logs, shiftWithButtonMode)
-
-        // Cập nhật vào database
-        await updateDailyWorkStatus(today, workStatusCalc)
+      } catch (storageError) {
+        console.error("[WorkStatusContext] Failed to update AsyncStorage:", storageError)
+        // If we can't update AsyncStorage, at least the state is updated
       }
     } catch (error) {
-      console.error("Failed to update work status:", error)
+      console.error("[WorkStatusContext] Failed to update work status:", error)
       throw error
     }
   }

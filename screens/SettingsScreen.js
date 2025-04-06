@@ -10,6 +10,9 @@ import { useShift } from "../contexts/ShiftContext"
 import { getShifts, removeShift } from "../utils/database"
 import AddShiftModal from "../components/AddShiftModal"
 
+// Declare __DEV__ if it's not already defined (e.g., in a webpack config)
+declare const __DEV__: boolean
+
 export default function SettingsScreen() {
   const navigation = useNavigation()
   const { theme, isDarkMode, toggleTheme } = useTheme()
@@ -345,6 +348,87 @@ export default function SettingsScreen() {
               thumbColor={multiActionButton ? theme.colors.primary : "#f4f3f4"}
             />
           </View>
+          {__DEV__ && (
+            <View style={styles.settingItem}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingTitle}>Debug Notifications</Text>
+                <Text style={styles.settingDescription}>Clear all scheduled notifications</Text>
+              </View>
+              <TouchableOpacity
+                onPress={async () => {
+                  try {
+                    // Import the clearAllNotifications function
+                    const { clearAllNotifications } = require("../utils/notificationService")
+
+                    // Show confirmation dialog
+                    Alert.alert("Debug Action", "Are you sure you want to clear all notifications?", [
+                      {
+                        text: "Cancel",
+                        style: "cancel",
+                      },
+                      {
+                        text: "Clear All",
+                        style: "destructive",
+                        onPress: async () => {
+                          const result = await clearAllNotifications()
+                          if (result) {
+                            Alert.alert("Success", "All notifications have been cleared")
+                          } else {
+                            Alert.alert("Error", "Failed to clear notifications")
+                          }
+                        },
+                      },
+                    ])
+                  } catch (error) {
+                    console.error("Failed to clear notifications:", error)
+                    Alert.alert("Error", "Failed to clear notifications")
+                  }
+                }}
+              >
+                <Ionicons name="bug" size={24} color={theme.colors.danger} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {__DEV__ && (
+            <View style={styles.settingItem}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingTitle}>View Notification Logs</Text>
+                <Text style={styles.settingDescription}>Check notification activity logs</Text>
+              </View>
+              <TouchableOpacity
+                onPress={async () => {
+                  try {
+                    // Import the getNotificationLogs function
+                    const { getNotificationLogs } = require("../utils/notificationService")
+
+                    const logs = await getNotificationLogs()
+
+                    if (logs.length === 0) {
+                      Alert.alert("No Logs", "No notification logs found")
+                      return
+                    }
+
+                    // Show the most recent 10 logs
+                    const recentLogs = logs.slice(0, 10)
+                    const logText = recentLogs
+                      .map(
+                        (log) =>
+                          `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.action}: ${JSON.stringify(log.details)}`,
+                      )
+                      .join("\n\n")
+
+                    Alert.alert("Recent Notification Logs", logText, [{ text: "OK" }], { cancelable: true })
+                  } catch (error) {
+                    console.error("Failed to get notification logs:", error)
+                    Alert.alert("Error", "Failed to get notification logs")
+                  }
+                }}
+              >
+                <Ionicons name="list" size={24} color={theme.colors.primary} />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </ScrollView>
 
