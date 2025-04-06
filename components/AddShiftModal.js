@@ -155,17 +155,20 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
   };
 
   // Helper function to calculate time difference in minutes, handling overnight shifts
-  const getTimeDifferenceInMinutes = (startDate, endDate) => {
-    const startMinutes = timeToMinutes(startDate);
-    let endMinutes = timeToMinutes(endDate);
+  const getTimeDifferenceInMinutes = useCallback(
+    (startDate, endDate) => {
+      const startMinutes = timeToMinutes(startDate);
+      let endMinutes = timeToMinutes(endDate);
 
-    // If end time is earlier than start time, assume it's the next day
-    if (endMinutes < startMinutes) {
-      endMinutes += 24 * 60; // Add 24 hours in minutes
-    }
+      // If end time is earlier than start time, assume it's the next day
+      if (endMinutes < startMinutes) {
+        endMinutes += 24 * 60; // Add 24 hours in minutes
+      }
 
-    return endMinutes - startMinutes;
-  };
+      return endMinutes - startMinutes;
+    },
+    [timeToMinutes]
+  );
 
   const validateForm = useCallback(() => {
     const newErrors = {

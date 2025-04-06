@@ -98,7 +98,7 @@ export default function WeatherForecast() {
     }
   }, [weatherData, currentShift, alertSettings, checkWeatherAlerts]);
 
-  const initWeatherData = async () => {
+  const initWeatherData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -130,7 +130,15 @@ export default function WeatherForecast() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    t,
+    loadWeatherData,
+    setLoading,
+    setError,
+    setLocation,
+    setCityName,
+    setWeatherData,
+  ]);
 
   const loadAlertSettings = async () => {
     try {
@@ -169,7 +177,7 @@ export default function WeatherForecast() {
     }
   };
 
-  const refreshWeatherData = async () => {
+  const refreshWeatherData = useCallback(async () => {
     setRefreshing(true);
     try {
       // Get fresh location data
@@ -195,7 +203,15 @@ export default function WeatherForecast() {
       setError(t("weatherLoadError"));
       setRefreshing(false);
     }
-  };
+  }, [
+    location,
+    t,
+    loadWeatherData,
+    setLocation,
+    setCityName,
+    setError,
+    setRefreshing,
+  ]);
 
   const toggleAlertSetting = async (setting) => {
     const newSettings = {

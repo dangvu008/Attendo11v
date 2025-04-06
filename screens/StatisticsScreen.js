@@ -33,23 +33,23 @@ export default function StatisticsScreen() {
   const [monthlyStats, setMonthlyStats] = useState([]);
 
   useEffect(() => {
+    const loadWorkLogs = async () => {
+      try {
+        const start = startOfMonth(selectedMonth);
+        const end = endOfMonth(selectedMonth);
+
+        const logs = await getWorkLogs(start, end);
+        setWorkLogs(logs);
+
+        // Process logs to generate statistics
+        generateMonthlyStats(logs, start, end);
+      } catch (error) {
+        console.error("Failed to load work logs:", error);
+      }
+    };
+
     loadWorkLogs();
-  }, [selectedMonth, loadWorkLogs]);
-
-  const loadWorkLogs = async () => {
-    try {
-      const start = startOfMonth(selectedMonth);
-      const end = endOfMonth(selectedMonth);
-
-      const logs = await getWorkLogs(start, end);
-      setWorkLogs(logs);
-
-      // Process logs to generate statistics
-      generateMonthlyStats(logs, start, end);
-    } catch (error) {
-      console.error("Failed to load work logs:", error);
-    }
-  };
+  }, [selectedMonth]);
 
   const generateMonthlyStats = (logs, start, end) => {
     const daysInMonth = eachDayOfInterval({ start, end });

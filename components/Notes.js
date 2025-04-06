@@ -106,7 +106,7 @@ export default function Notes() {
   useFocusEffect(
     useCallback(() => {
       loadNotes();
-    }, [currentShift, currentDayOfWeek, maxNotesToShow, loadNotes])
+    }, [loadNotes])
   );
 
   const handleDeleteNote = (noteId) => {
