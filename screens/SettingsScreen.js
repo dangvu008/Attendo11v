@@ -1,439 +1,261 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert } from "react-native"
-import { useNavigation } from "@react-navigation/native"
+import { useContext } from "react"
+import { View, Text, Switch, ScrollView, TouchableOpacity, StyleSheet } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
-import { useTheme } from "../contexts/ThemeContext"
-import { useI18n } from "../contexts/I18nContext"
-import { useShift } from "../contexts/ShiftContext"
-import { getShifts, removeShift } from "../utils/database"
-import AddShiftModal from "../components/AddShiftModal"
+import { AppContext } from "../context/AppContext"
+import LanguageSelector from "../components/LanguageSelector"
 
-// Declare __DEV__ if it's not already defined (e.g., in a webpack config)
-declare const __DEV__: boolean;
-
-export default function SettingsScreen() {
-  const navigation = useNavigation()
-  const { theme, isDarkMode, toggleTheme } = useTheme()
-  const { locale, changeLanguage, t } = useI18n()
-  const { refreshShifts } = useShift()
-
-  const [shifts, setShifts] = useState([])
-  const [showAddShift, setShowAddShift] = useState(false)
-  const [editingShift, setEditingShift] = useState(null)
-  const [notificationSound, setNotificationSound] = useState(true)
-  const [vibration, setVibration] = useState(true)
-  const [multiActionButton, setMultiActionButton] = useState(true)
-
-  useEffect(() => {
-    loadShifts()
-  }, [])
-
-  const loadShifts = async () => {
-    try {
-      const savedShifts = await getShifts()
-      setShifts(savedShifts)
-    } catch (error) {
-      console.error("Failed to load shifts:", error)
-    }
-  }
-
-  const handleEditShift = (shift) => {
-    setEditingShift(shift)
-    setShowAddShift(true)
-  }
-
-  const handleDeleteShift = (shiftId) => {
-    if (shifts.length <= 1) {
-      Alert.alert(t("error"), t("cannotDeleteLastShift"))
-      return
-    }
-
-    Alert.alert(t("confirm"), t("deleteShiftConfirmation"), [
-      {
-        text: t("cancel"),
-        style: "cancel",
-      },
-      {
-        text: t("delete"),
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await removeShift(shiftId)
-            await loadShifts()
-            refreshShifts()
-          } catch (error) {
-            console.error("Failed to delete shift:", error)
-          }
-        },
-      },
-    ])
-  }
-
-  const handleCloseAddShift = async (saved) => {
-    setShowAddShift(false)
-    setEditingShift(null)
-
-    if (saved) {
-      await loadShifts()
-      refreshShifts()
-    }
-  }
-
-  const toggleNotificationSound = () => {
-    setNotificationSound(!notificationSound)
-  }
-
-  const toggleVibration = () => {
-    setVibration(!vibration)
-  }
-
-  const toggleMultiActionButton = () => {
-    setMultiActionButton(!multiActionButton)
-  }
-
-  const handleLanguageChange = () => {
-    const newLocale = locale === "en" ? "vi" : "en"
-    changeLanguage(newLocale)
-  }
-
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      padding: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-    },
-    backButton: {
-      marginRight: 16,
-    },
-    title: {
-      fontSize: 20,
-      fontWeight: "bold",
-      color: theme.colors.text,
-    },
-    section: {
-      marginTop: 24,
-      marginHorizontal: 16,
-    },
-    sectionHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 16,
-    },
-    sectionTitle: {
-      fontSize: 18,
-      fontWeight: "bold",
-      color: theme.colors.text,
-    },
-    addButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: theme.colors.primary,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 8,
-    },
-    addButtonText: {
-      color: "white",
-      marginLeft: 4,
-    },
-    shiftCard: {
-      backgroundColor: theme.colors.card,
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 12,
-      shadowColor: "#000",
-      shadowOffset: {
-        width: 0,
-        height: 1,
-      },
-      shadowOpacity: 0.2,
-      shadowRadius: 1.41,
-      elevation: 2,
-    },
-    shiftHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 8,
-    },
-    shiftName: {
-      fontSize: 18,
-      fontWeight: "bold",
-      color: theme.colors.text,
-    },
-    shiftActions: {
-      flexDirection: "row",
-    },
-    actionButton: {
-      marginLeft: 12,
-    },
-    shiftTime: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-      marginBottom: 4,
-    },
-    shiftDays: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      marginTop: 8,
-    },
-    shiftDay: {
-      backgroundColor: theme.colors.primaryLight,
-      paddingHorizontal: 8,
-      paddingVertical: 2,
-      borderRadius: 4,
-      marginRight: 4,
-      marginBottom: 4,
-    },
-    shiftDayText: {
-      fontSize: 12,
-      color: theme.colors.primary,
-    },
-    settingItem: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      backgroundColor: theme.colors.card,
-      padding: 16,
-      borderRadius: 12,
-      marginBottom: 12,
-    },
-    settingInfo: {
-      flex: 1,
-    },
-    settingTitle: {
-      fontSize: 16,
-      color: theme.colors.text,
-      marginBottom: 4,
-    },
-    settingDescription: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-    },
-    divider: {
-      height: 1,
-      backgroundColor: theme.colors.border,
-      marginVertical: 24,
-      marginHorizontal: 16,
-    },
-  })
+export default function SettingsScreen({ navigation }) {
+  const {
+    darkMode,
+    setDarkMode,
+    language,
+    setLanguage,
+    soundEnabled,
+    setSoundEnabled,
+    vibrationEnabled,
+    setVibrationEnabled,
+    multiButtonMode,
+    setMultiButtonMode,
+    alarmEnabled,
+    setAlarmEnabled,
+    t,
+  } = useContext(AppContext)
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: darkMode ? "#121212" : "#f5f5f5" }]}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.title}>{t("settings")}</Text>
+        <Text style={[styles.screenTitle, { color: darkMode ? "#fff" : "#000" }]}>{t("settings")}</Text>
       </View>
 
-      <ScrollView>
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t("workShifts")}</Text>
-            <TouchableOpacity style={styles.addButton} onPress={() => setShowAddShift(true)}>
-              <Ionicons name="add" size={16} color="white" />
-              <Text style={styles.addButtonText}>{t("addNewShift")}</Text>
-            </TouchableOpacity>
+      <ScrollView style={styles.scrollView}>
+        <View style={[styles.section, { backgroundColor: darkMode ? "#1e1e1e" : "#fff" }]}>
+          <Text style={[styles.sectionTitle, { color: darkMode ? "#fff" : "#000" }]}>{t("general_settings")}</Text>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingTextContainer}>
+              <Text style={[styles.settingTitle, { color: darkMode ? "#fff" : "#000" }]}>{t("dark_mode")}</Text>
+              <Text style={[styles.settingDescription, { color: darkMode ? "#bbb" : "#777" }]}>
+                {t("dark_mode_description")}
+              </Text>
+            </View>
+            <Switch
+              value={darkMode}
+              onValueChange={setDarkMode}
+              trackColor={{ false: "#767577", true: "#6a5acd" }}
+              thumbColor="#f4f3f4"
+            />
           </View>
 
-          {shifts.map((shift) => (
-            <View key={shift.id} style={styles.shiftCard}>
-              <View style={styles.shiftHeader}>
-                <Text style={styles.shiftName}>{shift.name}</Text>
-                <View style={styles.shiftActions}>
-                  <TouchableOpacity style={styles.actionButton} onPress={() => handleEditShift(shift)}>
-                    <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton} onPress={() => handleDeleteShift(shift.id)}>
-                    <Ionicons name="trash-outline" size={20} color={theme.colors.danger} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <Text style={styles.shiftTime}>
-                {t("departureTime")}: {shift.departureTime}
-              </Text>
-              <Text style={styles.shiftTime}>
-                {t("startTime")}: {shift.startTime}
-              </Text>
-              <Text style={styles.shiftTime}>
-                {t("endTime")}: {shift.endTime}
-              </Text>
-
-              <View style={styles.shiftDays}>
-                {shift.days &&
-                  shift.days.map((day) => (
-                    <View key={day} style={styles.shiftDay}>
-                      <Text style={styles.shiftDayText}>{day}</Text>
-                    </View>
-                  ))}
-              </View>
+          <View style={styles.settingItem}>
+            <View style={styles.settingTextContainer}>
+              <Text style={[styles.settingTitle, { color: darkMode ? "#fff" : "#000" }]}>{t("language")}</Text>
             </View>
-          ))}
+            <LanguageSelector language={language} setLanguage={setLanguage} darkMode={darkMode} />
+          </View>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingTextContainer}>
+              <Text style={[styles.settingTitle, { color: darkMode ? "#fff" : "#000" }]}>
+                {t("notification_sound")}
+              </Text>
+              <Text style={[styles.settingDescription, { color: darkMode ? "#bbb" : "#777" }]}>
+                {t("play_sound_on_notification")}
+              </Text>
+            </View>
+            <Switch
+              value={soundEnabled}
+              onValueChange={setSoundEnabled}
+              trackColor={{ false: "#767577", true: "#6a5acd" }}
+              thumbColor="#f4f3f4"
+            />
+          </View>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingTextContainer}>
+              <Text style={[styles.settingTitle, { color: darkMode ? "#fff" : "#000" }]}>
+                {t("notification_vibration")}
+              </Text>
+              <Text style={[styles.settingDescription, { color: darkMode ? "#bbb" : "#777" }]}>
+                {t("vibrate_on_notification")}
+              </Text>
+            </View>
+            <Switch
+              value={vibrationEnabled}
+              onValueChange={setVibrationEnabled}
+              trackColor={{ false: "#767577", true: "#6a5acd" }}
+              thumbColor="#f4f3f4"
+            />
+          </View>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingTextContainer}>
+              <Text style={[styles.settingTitle, { color: darkMode ? "#fff" : "#000" }]}>
+                {t("alarm_mode") || "Chế độ báo thức"}
+              </Text>
+              <Text style={[styles.settingDescription, { color: darkMode ? "#bbb" : "#777" }]}>
+                {t("alarm_mode_description") || "Sử dụng báo thức thay vì thông báo thông thường"}
+              </Text>
+            </View>
+            <Switch
+              value={alarmEnabled}
+              onValueChange={setAlarmEnabled}
+              trackColor={{ false: "#767577", true: "#6a5acd" }}
+              thumbColor="#f4f3f4"
+            />
+          </View>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingTextContainer}>
+              <Text style={[styles.settingTitle, { color: darkMode ? "#fff" : "#000" }]}>{t("multi_button_mode")}</Text>
+              <Text style={[styles.settingDescription, { color: darkMode ? "#bbb" : "#777" }]}>
+                {t("multi_button_mode_description")}
+              </Text>
+            </View>
+            <Switch
+              value={multiButtonMode}
+              onValueChange={setMultiButtonMode}
+              trackColor={{ false: "#767577", true: "#6a5acd" }}
+              thumbColor="#f4f3f4"
+            />
+          </View>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.section, { backgroundColor: darkMode ? "#1e1e1e" : "#fff" }]}>
+          <Text style={[styles.sectionTitle, { color: darkMode ? "#fff" : "#000" }]}>
+            {t("data_management") || "Data Management"}
+          </Text>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("generalSettings")}</Text>
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>{t("darkMode")}</Text>
-              <Text style={styles.settingDescription}>{t("darkModeDescription")}</Text>
-            </View>
-            <Switch
-              value={isDarkMode}
-              onValueChange={toggleTheme}
-              trackColor={{ false: "#767577", true: theme.colors.primaryLight }}
-              thumbColor={isDarkMode ? theme.colors.primary : "#f4f3f4"}
-            />
-          </View>
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>{t("language")}</Text>
-              <Text style={styles.settingDescription}>{locale === "en" ? "English" : "Tiếng Việt"}</Text>
-            </View>
-            <TouchableOpacity onPress={handleLanguageChange}>
-              <Ionicons name="language" size={24} color={theme.colors.primary} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>{t("notificationSound")}</Text>
-              <Text style={styles.settingDescription}>{t("notificationSoundDescription")}</Text>
-            </View>
-            <Switch
-              value={notificationSound}
-              onValueChange={toggleNotificationSound}
-              trackColor={{ false: "#767577", true: theme.colors.primaryLight }}
-              thumbColor={notificationSound ? theme.colors.primary : "#f4f3f4"}
-            />
-          </View>
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>{t("vibration")}</Text>
-              <Text style={styles.settingDescription}>{t("vibrationDescription")}</Text>
-            </View>
-            <Switch
-              value={vibration}
-              onValueChange={toggleVibration}
-              trackColor={{ false: "#767577", true: theme.colors.primaryLight }}
-              thumbColor={vibration ? theme.colors.primary : "#f4f3f4"}
-            />
-          </View>
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>{t("multiActionButton")}</Text>
-              <Text style={styles.settingDescription}>{t("multiActionButtonDescription")}</Text>
-            </View>
-            <Switch
-              value={multiActionButton}
-              onValueChange={toggleMultiActionButton}
-              trackColor={{ false: "#767577", true: theme.colors.primaryLight }}
-              thumbColor={multiActionButton ? theme.colors.primary : "#f4f3f4"}
-            />
-          </View>
-          {__DEV__ && (
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Debug Notifications</Text>
-                <Text style={styles.settingDescription}>Clear all scheduled notifications</Text>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate("DataManagement")}>
+            <View style={styles.menuItemContent}>
+              <Ionicons
+                name="save-outline"
+                size={24}
+                color={darkMode ? "#6a5acd" : "#6a5acd"}
+                style={styles.menuIcon}
+              />
+              <View style={styles.menuTextContainer}>
+                <Text style={[styles.menuTitle, { color: darkMode ? "#fff" : "#000" }]}>
+                  {t("data_backup_restore") || "Backup & Restore"}
+                </Text>
+                <Text style={[styles.menuDescription, { color: darkMode ? "#bbb" : "#777" }]}>
+                  {t("manage_app_data") || "Manage your application data"}
+                </Text>
               </View>
-              <TouchableOpacity
-                onPress={async () => {
-                  try {
-                    // Import the clearAllNotifications function
-                    const { clearAllNotifications } = require("../utils/notificationService")
-
-                    // Show confirmation dialog
-                    Alert.alert("Debug Action", "Are you sure you want to clear all notifications?", [
-                      {
-                        text: "Cancel",
-                        style: "cancel",
-                      },
-                      {
-                        text: "Clear All",
-                        style: "destructive",
-                        onPress: async () => {
-                          const result = await clearAllNotifications()
-                          if (result) {
-                            Alert.alert("Success", "All notifications have been cleared")
-                          } else {
-                            Alert.alert("Error", "Failed to clear notifications")
-                          }
-                        },
-                      },
-                    ])
-                  } catch (error) {
-                    console.error("Failed to clear notifications:", error)
-                    Alert.alert("Error", "Failed to clear notifications")
-                  }
-                }}
-              >
-                <Ionicons name="bug" size={24} color={theme.colors.danger} />
-              </TouchableOpacity>
             </View>
-          )}
+            <Ionicons name="chevron-forward" size={20} color={darkMode ? "#bbb" : "#777"} />
+          </TouchableOpacity>
+        </View>
 
-          {__DEV__ && (
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>View Notification Logs</Text>
-                <Text style={styles.settingDescription}>Check notification activity logs</Text>
-              </View>
-              <TouchableOpacity
-                onPress={async () => {
-                  try {
-                    // Import the getNotificationLogs function
-                    const { getNotificationLogs } = require("../utils/notificationService")
-
-                    const logs = await getNotificationLogs()
-
-                    if (logs.length === 0) {
-                      Alert.alert("No Logs", "No notification logs found")
-                      return
-                    }
-
-                    // Show the most recent 10 logs
-                    const recentLogs = logs.slice(0, 10)
-                    const logText = recentLogs
-                      .map(
-                        (log) =>
-                          `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.action}: ${JSON.stringify(log.details)}`,
-                      )
-                      .join("\n\n")
-
-                    Alert.alert("Recent Notification Logs", logText, [{ text: "OK" }], { cancelable: true })
-                  } catch (error) {
-                    console.error("Failed to get notification logs:", error)
-                    Alert.alert("Error", "Failed to get notification logs")
-                  }
-                }}
-              >
-                <Ionicons name="list" size={24} color={theme.colors.primary} />
-              </TouchableOpacity>
-            </View>
-          )}
+        <View style={[styles.section, { backgroundColor: darkMode ? "#1e1e1e" : "#fff" }]}>
+          <Text style={[styles.sectionTitle, { color: darkMode ? "#fff" : "#000" }]}>{t("about")}</Text>
+          <View style={styles.aboutContainer}>
+            <Text style={[styles.appName, { color: darkMode ? "#fff" : "#000" }]}>Attendo11</Text>
+            <Text style={[styles.appVersion, { color: darkMode ? "#bbb" : "#777" }]}>Version 1.0.0</Text>
+            <Text style={[styles.appDescription, { color: darkMode ? "#bbb" : "#777" }]}>{t("app_description")}</Text>
+          </View>
         </View>
       </ScrollView>
-
-      <AddShiftModal visible={showAddShift} onClose={handleCloseAddShift} editShift={editingShift} />
-    </View>
+    </SafeAreaView>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  screenTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  section: {
+    marginHorizontal: 16,
+    marginVertical: 12,
+    borderRadius: 12,
+    overflow: "hidden",
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 16,
+  },
+  settingItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0, 0, 0, 0.05)",
+  },
+  settingTextContainer: {
+    flex: 1,
+    marginRight: 16,
+  },
+  settingTitle: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  settingDescription: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+  aboutContainer: {
+    alignItems: "center",
+    paddingVertical: 16,
+  },
+  appName: {
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  appVersion: {
+    fontSize: 16,
+    marginTop: 4,
+  },
+  appDescription: {
+    fontSize: 14,
+    marginTop: 16,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0, 0, 0, 0.05)",
+  },
+  menuItemContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  menuIcon: {
+    marginRight: 12,
+  },
+  menuTextContainer: {
+    flex: 1,
+  },
+  menuTitle: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  menuDescription: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+})
 

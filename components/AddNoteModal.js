@@ -1,30 +1,40 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, ScrollView, Platform, Alert } from "react-native"
-import DateTimePicker from "@react-native-community/datetimepicker"
-import { Ionicons } from "@expo/vector-icons"
-import { useTheme } from "../contexts/ThemeContext"
-import { useI18n } from "../contexts/I18nContext"
-import { saveNote, getShifts, getNotes, updateNote } from "../utils/database"
-import { v4 as uuidv4 } from "uuid"
+import { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Platform,
+  Alert,
+} from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../contexts/ThemeContext";
+import { useI18n } from "../contexts/I18nContext";
+import { saveNote, getShifts, getNotes, updateNote } from "../utils/database";
+import { v4 as uuidv4 } from "uuid";
 
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function AddNoteModal({ visible, onClose, editNote }) {
-  const { theme } = useTheme()
-  const { t } = useI18n()
+  const { theme } = useTheme();
+  const { t } = useI18n();
 
-  const [id, setId] = useState("")
-  const [title, setTitle] = useState("")
-  const [content, setContent] = useState("")
-  const [reminderDate, setReminderDate] = useState(new Date())
-  const [showDatePicker, setShowDatePicker] = useState(false)
-  const [explicitReminderDays, setExplicitReminderDays] = useState([])
-  const [datePickerMode, setDatePickerMode] = useState("date")
-  const [shifts, setShifts] = useState([])
-  const [associatedShiftIds, setAssociatedShiftIds] = useState([])
-  const [existingNotes, setExistingNotes] = useState([])
+  const [id, setId] = useState("");
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [reminderDate, setReminderDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [explicitReminderDays, setExplicitReminderDays] = useState([]);
+  const [datePickerMode, setDatePickerMode] = useState("date");
+  const [shifts, setShifts] = useState([]);
+  const [associatedShiftIds, setAssociatedShiftIds] = useState([]);
+  const [existingNotes, setExistingNotes] = useState([]);
 
   // Validation states
   const [errors, setErrors] = useState({
@@ -33,7 +43,7 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
     reminderTime: null,
     explicitReminderDays: null,
     uniqueness: null,
-  })
+  });
 
   // Load existing notes and shifts
   useEffect(() => {
@@ -41,69 +51,77 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
       const loadData = async () => {
         try {
           // Load shifts
-          const availableShifts = await getShifts()
-          setShifts(availableShifts)
+          const availableShifts = await getShifts();
+          setShifts(availableShifts);
 
           // Load existing notes
-          const notes = await getNotes()
+          const notes = await getNotes();
           if (editNote) {
             // Filter out the current note if in edit mode
-            setExistingNotes(notes.filter((note) => note.id !== editNote.id))
+            setExistingNotes(notes.filter((note) => note.id !== editNote.id));
           } else {
-            setExistingNotes(notes)
+            setExistingNotes(notes);
           }
         } catch (error) {
-          console.error("Failed to load data:", error)
+          console.error("Failed to load data:", error);
         }
-      }
+      };
 
-      loadData()
+      loadData();
     }
-  }, [visible, editNote])
+  }, [visible, editNote]);
 
   // Set form values when editing a note
   useEffect(() => {
     if (editNote && visible) {
-      setId(editNote.id)
-      setTitle(editNote.title)
-      setContent(editNote.content)
+      setId(editNote.id);
+      setTitle(editNote.title);
+      setContent(editNote.content);
 
       // Set reminder time
       if (editNote.reminderTime) {
-        setReminderDate(new Date(editNote.reminderTime))
+        setReminderDate(new Date(editNote.reminderTime));
       }
 
       // Set associated shifts
-      setAssociatedShiftIds(editNote.associatedShiftIds || [])
+      setAssociatedShiftIds(editNote.associatedShiftIds || []);
 
       // Set explicit reminder days
-      setExplicitReminderDays(editNote.explicitReminderDays || [])
+      setExplicitReminderDays(editNote.explicitReminderDays || []);
     } else if (visible) {
       // Reset form for new note
-      resetForm()
+      resetForm();
     }
-  }, [editNote, visible])
+  }, [editNote, visible]);
 
   // Validate form whenever values change
   useEffect(() => {
-    validateForm()
-  }, [title, content, reminderDate, explicitReminderDays, associatedShiftIds, existingNotes])
+    validateForm();
+  }, [
+    title,
+    content,
+    reminderDate,
+    explicitReminderDays,
+    associatedShiftIds,
+    existingNotes,
+    validateForm,
+  ]);
 
   const resetForm = () => {
-    setId("")
-    setTitle("")
-    setContent("")
-    setReminderDate(new Date())
-    setExplicitReminderDays([])
-    setAssociatedShiftIds([])
+    setId("");
+    setTitle("");
+    setContent("");
+    setReminderDate(new Date());
+    setExplicitReminderDays([]);
+    setAssociatedShiftIds([]);
     setErrors({
       title: null,
       content: null,
       reminderTime: null,
       explicitReminderDays: null,
       uniqueness: null,
-    })
-  }
+    });
+  };
 
   const validateForm = () => {
     const newErrors = {
@@ -112,135 +130,144 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
       reminderTime: null,
       explicitReminderDays: null,
       uniqueness: null,
-    }
+    };
 
     // Validate title
     if (!title.trim()) {
-      newErrors.title = t("titleRequired")
+      newErrors.title = t("titleRequired");
     } else if (title.length > 100) {
-      newErrors.title = t("titleTooLong")
+      newErrors.title = t("titleTooLong");
     }
 
     // Validate content
     if (!content.trim()) {
-      newErrors.content = t("contentRequired")
+      newErrors.content = t("contentRequired");
     } else if (content.length > 300) {
-      newErrors.content = t("contentTooLong")
+      newErrors.content = t("contentTooLong");
     }
 
     // Validate reminder days if no shifts selected
     if (associatedShiftIds.length === 0 && explicitReminderDays.length === 0) {
-      newErrors.explicitReminderDays = t("selectAtLeastOneDay")
+      newErrors.explicitReminderDays = t("selectAtLeastOneDay");
     }
 
     // Check uniqueness (title + content)
-    const normalizedTitle = title.trim()
-    const normalizedContent = content.trim()
+    const normalizedTitle = title.trim();
+    const normalizedContent = content.trim();
 
     const isDuplicate = existingNotes.some(
-      (note) => note.title.trim() === normalizedTitle && note.content.trim() === normalizedContent,
-    )
+      (note) =>
+        note.title.trim() === normalizedTitle &&
+        note.content.trim() === normalizedContent
+    );
 
     if (isDuplicate) {
-      newErrors.uniqueness = t("noteAlreadyExists")
+      newErrors.uniqueness = t("noteAlreadyExists");
     }
 
-    setErrors(newErrors)
+    setErrors(newErrors);
 
     // Return true if no errors
-    return !Object.values(newErrors).some((error) => error !== null)
-  }
+    return !Object.values(newErrors).some((error) => error !== null);
+  };
 
   const handleSave = async () => {
     // Validate form before saving
     if (!validateForm()) {
       // Show first error in an alert
-      const firstError = Object.values(errors).find((error) => error !== null)
+      const firstError = Object.values(errors).find((error) => error !== null);
       if (firstError) {
-        Alert.alert(t("error"), firstError)
+        Alert.alert(t("error"), firstError);
       }
-      return
+      return;
     }
 
     // Confirm save
-    Alert.alert(t("confirm"), editNote ? t("updateNoteConfirmation") : t("saveNoteConfirmation"), [
-      {
-        text: t("cancel"),
-        style: "cancel",
-      },
-      {
-        text: t("save"),
-        onPress: async () => {
-          try {
-            const noteData = {
-              title: title.trim(),
-              content: content.trim(),
-              reminderTime: reminderDate.toISOString(),
-              associatedShiftIds: associatedShiftIds,
-              explicitReminderDays: associatedShiftIds.length > 0 ? [] : explicitReminderDays,
-              updatedAt: new Date().toISOString(),
-            }
-
-            if (editNote) {
-              // Update existing note
-              await updateNote(editNote.id, noteData)
-            } else {
-              // Create new note with UUID
-              await saveNote({
-                ...noteData,
-                id: uuidv4(),
-                createdAt: new Date().toISOString(),
-              })
-            }
-
-            resetForm()
-            onClose(true)
-          } catch (error) {
-            console.error("Failed to save note:", error)
-            Alert.alert(t("error"), t("failedToSaveNote"))
-          }
+    Alert.alert(
+      t("confirm"),
+      editNote ? t("updateNoteConfirmation") : t("saveNoteConfirmation"),
+      [
+        {
+          text: t("cancel"),
+          style: "cancel",
         },
-      },
-    ])
-  }
+        {
+          text: t("save"),
+          onPress: async () => {
+            try {
+              const noteData = {
+                title: title.trim(),
+                content: content.trim(),
+                reminderTime: reminderDate.toISOString(),
+                associatedShiftIds: associatedShiftIds,
+                explicitReminderDays:
+                  associatedShiftIds.length > 0 ? [] : explicitReminderDays,
+                updatedAt: new Date().toISOString(),
+              };
+
+              if (editNote) {
+                // Update existing note
+                await updateNote(editNote.id, noteData);
+              } else {
+                // Create new note with UUID
+                await saveNote({
+                  ...noteData,
+                  id: uuidv4(),
+                  createdAt: new Date().toISOString(),
+                });
+              }
+
+              resetForm();
+              onClose(true);
+            } catch (error) {
+              console.error("Failed to save note:", error);
+              Alert.alert(t("error"), t("failedToSaveNote"));
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const toggleWeekday = (index) => {
     if (explicitReminderDays.includes(index)) {
-      setExplicitReminderDays(explicitReminderDays.filter((day) => day !== index))
+      setExplicitReminderDays(
+        explicitReminderDays.filter((day) => day !== index)
+      );
     } else {
-      setExplicitReminderDays([...explicitReminderDays, index])
+      setExplicitReminderDays([...explicitReminderDays, index]);
     }
-  }
+  };
 
   const toggleShift = (shiftId) => {
     if (associatedShiftIds.includes(shiftId)) {
-      setAssociatedShiftIds(associatedShiftIds.filter((id) => id !== shiftId))
+      setAssociatedShiftIds(associatedShiftIds.filter((id) => id !== shiftId));
     } else {
-      setAssociatedShiftIds([...associatedShiftIds, shiftId])
+      setAssociatedShiftIds([...associatedShiftIds, shiftId]);
     }
-  }
+  };
 
   const showDateTimePicker = (mode) => {
-    setDatePickerMode(mode)
-    setShowDatePicker(true)
-  }
+    setDatePickerMode(mode);
+    setShowDatePicker(true);
+  };
 
   const onDateTimeChange = (event, selectedDate) => {
-    const currentDate = selectedDate || reminderDate
+    const currentDate = selectedDate || reminderDate;
 
     if (Platform.OS === "android") {
-      setShowDatePicker(false)
+      setShowDatePicker(false);
     }
 
-    setReminderDate(currentDate)
+    setReminderDate(currentDate);
 
     if (Platform.OS === "android" && datePickerMode === "date") {
       // After selecting date on Android, show time picker
       setTimeout(() => {
-        showDateTimePicker("time")
-      }, 500)
+        showDateTimePicker("time");
+      }, 500);
     }
-  }
+  };
 
   const styles = StyleSheet.create({
     modalContainer: {
@@ -414,18 +441,28 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
     checkbox: {
       marginRight: 8,
     },
-  })
+  });
 
   // Check if form has any validation errors
-  const hasErrors = Object.values(errors).some((error) => error !== null)
+  const hasErrors = Object.values(errors).some((error) => error !== null);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={() => onClose(false)}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => onClose(false)}
+    >
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{editNote ? t("editNote") : t("addNewNote")}</Text>
-            <TouchableOpacity style={styles.closeButton} onPress={() => onClose(false)}>
+            <Text style={styles.modalTitle}>
+              {editNote ? t("editNote") : t("addNewNote")}
+            </Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => onClose(false)}
+            >
               <Ionicons name="close" size={24} color={theme.colors.text} />
             </TouchableOpacity>
           </View>
@@ -443,14 +480,20 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
                 maxLength={100}
               />
               <Text style={styles.characterCount}>{title.length}/100</Text>
-              {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
+              {errors.title && (
+                <Text style={styles.errorText}>{errors.title}</Text>
+              )}
             </View>
 
             {/* Nội dung */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>{t("content")}</Text>
               <TextInput
-                style={[styles.input, styles.contentInput, errors.content && styles.inputError]}
+                style={[
+                  styles.input,
+                  styles.contentInput,
+                  errors.content && styles.inputError,
+                ]}
                 placeholder={t("enterContent")}
                 placeholderTextColor={theme.colors.textSecondary}
                 value={content}
@@ -459,22 +502,36 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
                 maxLength={300}
               />
               <Text style={styles.characterCount}>{content.length}/300</Text>
-              {errors.content && <Text style={styles.errorText}>{errors.content}</Text>}
+              {errors.content && (
+                <Text style={styles.errorText}>{errors.content}</Text>
+              )}
             </View>
 
             {/* Thời gian nhắc nhở */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>{t("reminderTime")}</Text>
               <TouchableOpacity
-                style={[styles.datePickerButton, errors.reminderTime && styles.inputError]}
+                style={[
+                  styles.datePickerButton,
+                  errors.reminderTime && styles.inputError,
+                ]}
                 onPress={() => showDateTimePicker("time")}
               >
                 <Text style={styles.dateText}>
-                  {reminderDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {reminderDate.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </Text>
-                <Ionicons name="time-outline" size={20} color={theme.colors.text} />
+                <Ionicons
+                  name="time-outline"
+                  size={20}
+                  color={theme.colors.text}
+                />
               </TouchableOpacity>
-              {errors.reminderTime && <Text style={styles.errorText}>{errors.reminderTime}</Text>}
+              {errors.reminderTime && (
+                <Text style={styles.errorText}>{errors.reminderTime}</Text>
+              )}
             </View>
 
             {showDatePicker && (
@@ -494,13 +551,23 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
               {/* Danh sách ca làm việc */}
               <View style={styles.shiftsList}>
                 {shifts.length === 0 ? (
-                  <Text style={styles.shiftItemText}>{t("noShiftsAvailable")}</Text>
+                  <Text style={styles.shiftItemText}>
+                    {t("noShiftsAvailable")}
+                  </Text>
                 ) : (
                   shifts.map((shift) => (
-                    <TouchableOpacity key={shift.id} style={styles.shiftItem} onPress={() => toggleShift(shift.id)}>
+                    <TouchableOpacity
+                      key={shift.id}
+                      style={styles.shiftItem}
+                      onPress={() => toggleShift(shift.id)}
+                    >
                       <View style={styles.checkboxContainer}>
                         <Ionicons
-                          name={associatedShiftIds.includes(shift.id) ? "checkbox" : "square-outline"}
+                          name={
+                            associatedShiftIds.includes(shift.id)
+                              ? "checkbox"
+                              : "square-outline"
+                          }
                           size={24}
                           color={theme.colors.primary}
                           style={styles.checkbox}
@@ -516,58 +583,80 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
             {/* Phần chọn ngày trong tuần - chỉ hiển thị khi không chọn ca */}
             {associatedShiftIds.length === 0 && (
               <View style={styles.weekdaysContainer}>
-                <Text style={styles.weekdaysLabel}>{t("explicitReminderDays")}</Text>
+                <Text style={styles.weekdaysLabel}>
+                  {t("explicitReminderDays")}
+                </Text>
                 <View style={styles.weekdaysRow}>
                   {WEEKDAYS.map((day, index) => (
                     <TouchableOpacity
                       key={index}
                       style={[
                         styles.weekdayButton,
-                        explicitReminderDays.includes(index) && styles.weekdayButtonSelected,
+                        explicitReminderDays.includes(index) &&
+                          styles.weekdayButtonSelected,
                         errors.explicitReminderDays &&
-                          associatedShiftIds.length === 0 && { borderColor: theme.colors.danger },
+                          associatedShiftIds.length === 0 && {
+                            borderColor: theme.colors.danger,
+                          },
                       ]}
                       onPress={() => toggleWeekday(index)}
                     >
                       <Text
-                        style={[styles.weekdayText, explicitReminderDays.includes(index) && styles.weekdayTextSelected]}
+                        style={[
+                          styles.weekdayText,
+                          explicitReminderDays.includes(index) &&
+                            styles.weekdayTextSelected,
+                        ]}
                       >
                         {day.substring(0, 1)}
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
-                {errors.explicitReminderDays && associatedShiftIds.length === 0 && (
-                  <Text style={styles.errorText}>{errors.explicitReminderDays}</Text>
-                )}
+                {errors.explicitReminderDays &&
+                  associatedShiftIds.length === 0 && (
+                    <Text style={styles.errorText}>
+                      {errors.explicitReminderDays}
+                    </Text>
+                  )}
               </View>
             )}
 
             {/* Hiển thị lỗi trùng lặp nếu có */}
-            {errors.uniqueness && <Text style={[styles.errorText, { marginBottom: 16 }]}>{errors.uniqueness}</Text>}
+            {errors.uniqueness && (
+              <Text style={[styles.errorText, { marginBottom: 16 }]}>
+                {errors.uniqueness}
+              </Text>
+            )}
 
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.button, styles.cancelButton]}
                 onPress={() => {
-                  resetForm()
-                  onClose(false)
+                  resetForm();
+                  onClose(false);
                 }}
               >
-                <Text style={[styles.buttonText, styles.cancelButtonText]}>{t("cancel")}</Text>
+                <Text style={[styles.buttonText, styles.cancelButtonText]}>
+                  {t("cancel")}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.button, hasErrors ? styles.disabledButton : styles.saveButton]}
+                style={[
+                  styles.button,
+                  hasErrors ? styles.disabledButton : styles.saveButton,
+                ]}
                 onPress={handleSave}
                 disabled={hasErrors}
               >
-                <Text style={[styles.buttonText, styles.saveButtonText]}>{t("save")}</Text>
+                <Text style={[styles.buttonText, styles.saveButtonText]}>
+                  {t("save")}
+                </Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
         </View>
       </View>
     </Modal>
-  )
+  );
 }
-

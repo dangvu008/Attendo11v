@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,33 +12,33 @@ import {
   Switch,
   Alert,
   Platform,
-} from "react-native"
-import DateTimePicker from "@react-native-community/datetimepicker"
-import { Ionicons } from "@expo/vector-icons"
-import { useTheme } from "../contexts/ThemeContext"
-import { useI18n } from "../contexts/I18nContext"
-import { useShift } from "../contexts/ShiftContext"
-import { getShifts } from "../utils/database"
+} from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../contexts/ThemeContext";
+import { useI18n } from "../contexts/I18nContext";
+import { useShift } from "../contexts/ShiftContext";
+import { getShifts } from "../utils/database";
 
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function AddShiftModal({ visible, onClose, editShift }) {
-  const { theme } = useTheme()
-  const { t } = useI18n()
-  const { addShift, updateShift } = useShift()
+  const { theme } = useTheme();
+  const { t } = useI18n();
+  const { addShift, updateShift } = useShift();
 
-  const [name, setName] = useState("")
-  const [departureTime, setDepartureTime] = useState(new Date())
-  const [startTime, setStartTime] = useState(new Date())
-  const [endTime, setEndTime] = useState(new Date())
-  const [officeEndTime, setOfficeEndTime] = useState(new Date())
-  const [remindBeforeStart, setRemindBeforeStart] = useState(15)
-  const [remindAfterEnd, setRemindAfterEnd] = useState(15)
-  const [showSignButton, setShowSignButton] = useState(false)
-  const [selectedWeekdays, setSelectedWeekdays] = useState([0, 1, 2, 3, 4]) // Mon-Fri by default
+  const [name, setName] = useState("");
+  const [departureTime, setDepartureTime] = useState(new Date());
+  const [startTime, setStartTime] = useState(new Date());
+  const [endTime, setEndTime] = useState(new Date());
+  const [officeEndTime, setOfficeEndTime] = useState(new Date());
+  const [remindBeforeStart, setRemindBeforeStart] = useState(15);
+  const [remindAfterEnd, setRemindAfterEnd] = useState(15);
+  const [showSignButton, setShowSignButton] = useState(false);
+  const [selectedWeekdays, setSelectedWeekdays] = useState([0, 1, 2, 3, 4]); // Mon-Fri by default
 
-  const [showTimePicker, setShowTimePicker] = useState(false)
-  const [currentTimeField, setCurrentTimeField] = useState(null)
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [currentTimeField, setCurrentTimeField] = useState(null);
 
   // Validation states
   const [errors, setErrors] = useState({
@@ -48,93 +48,104 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
     officeEndTime: null,
     endTime: null,
     selectedWeekdays: null,
-  })
+  });
 
-  const [existingShifts, setExistingShifts] = useState([])
-  const [isFormValid, setIsFormValid] = useState(false)
+  const [existingShifts, setExistingShifts] = useState([]);
+  const [isFormValid, setIsFormValid] = useState(false);
 
   // Load existing shifts for name uniqueness validation
   useEffect(() => {
     const loadExistingShifts = async () => {
       try {
-        const shifts = await getShifts()
+        const shifts = await getShifts();
         // Filter out the current shift if in edit mode
         if (editShift) {
-          setExistingShifts(shifts.filter((shift) => shift.id !== editShift.id))
+          setExistingShifts(
+            shifts.filter((shift) => shift.id !== editShift.id)
+          );
         } else {
-          setExistingShifts(shifts)
+          setExistingShifts(shifts);
         }
       } catch (error) {
-        console.error("Failed to load existing shifts:", error)
+        console.error("Failed to load existing shifts:", error);
       }
-    }
+    };
 
-    loadExistingShifts()
-  }, [editShift])
+    loadExistingShifts();
+  }, [editShift]);
 
   useEffect(() => {
     if (editShift) {
-      setName(editShift.name)
+      setName(editShift.name);
 
       // Convert string times to Date objects
       const setTimeFromString = (timeStr) => {
-        const [hours, minutes] = timeStr.split(":").map(Number)
-        const date = new Date()
-        date.setHours(hours, minutes, 0, 0)
-        return date
-      }
+        const [hours, minutes] = timeStr.split(":").map(Number);
+        const date = new Date();
+        date.setHours(hours, minutes, 0, 0);
+        return date;
+      };
 
-      setDepartureTime(setTimeFromString(editShift.departureTime))
-      setStartTime(setTimeFromString(editShift.startTime))
-      setEndTime(setTimeFromString(editShift.endTime))
-      setOfficeEndTime(setTimeFromString(editShift.officeEndTime))
+      setDepartureTime(setTimeFromString(editShift.departureTime));
+      setStartTime(setTimeFromString(editShift.startTime));
+      setEndTime(setTimeFromString(editShift.endTime));
+      setOfficeEndTime(setTimeFromString(editShift.officeEndTime));
 
-      setRemindBeforeStart(editShift.remindBeforeStart)
-      setRemindAfterEnd(editShift.remindAfterEnd)
-      setShowSignButton(editShift.showSignButton)
-      setSelectedWeekdays(editShift.days || [0, 1, 2, 3, 4])
+      setRemindBeforeStart(editShift.remindBeforeStart);
+      setRemindAfterEnd(editShift.remindAfterEnd);
+      setShowSignButton(editShift.showSignButton);
+      setSelectedWeekdays(editShift.days || [0, 1, 2, 3, 4]);
     } else {
-      resetForm()
+      resetForm();
     }
 
     // Validate form after setting initial values
-    validateForm()
-  }, [editShift, visible])
+    validateForm();
+  }, [editShift, visible, validateForm]);
 
   // Validate form whenever any field changes
   useEffect(() => {
-    validateForm()
-  }, [name, departureTime, startTime, endTime, officeEndTime, selectedWeekdays, existingShifts])
+    validateForm();
+  }, [
+    name,
+    departureTime,
+    startTime,
+    endTime,
+    officeEndTime,
+    selectedWeekdays,
+    existingShifts,
+    validateForm,
+  ]);
 
   const resetForm = () => {
-    setName("")
+    setName("");
 
-    const now = new Date()
+    const now = new Date();
 
     // Set default departure time (7:10 AM)
-    const departureDefault = new Date(now)
-    departureDefault.setHours(7, 10, 0, 0)
-    setDepartureTime(departureDefault)
+    const departureDefault = new Date(now);
+    departureDefault.setHours(7, 10, 0, 0);
+    setDepartureTime(departureDefault);
 
     // Set default start time (8:00 AM)
-    const startDefault = new Date(now)
-    startDefault.setHours(8, 0, 0, 0)
-    setStartTime(startDefault)
+    const startDefault = new Date(now);
+    startDefault.setHours(8, 0, 0, 0);
+    setStartTime(startDefault);
 
     // Set default end time (5:00 PM)
-    const endDefault = new Date(now)
-    endDefault.setHours(17, 0, 0, 0)
-    setEndTime(endDefault)
+    const endDefault = new Date(now);
+    endDefault.setHours(17, 0, 0, 0);
+    setEndTime(endDefault);
 
     // Set default office end time (same as end time)
-    const officeEndDefault = new Date(now)
-    officeEndDefault.setHours(17, 0, 0, 0)
-    setOfficeEndTime(officeEndDefault)
+    const officeEndDefault = new Date(now);
+    officeEndDefault.setHours(17, 0, 0, 0);
+    setOfficeEndTime(officeEndDefault);
 
-    setRemindBeforeStart(15)
-    setRemindAfterEnd(15)
-    setShowSignButton(false)
-    setSelectedWeekdays([0, 1, 2, 3, 4]) // Mon-Fri by default
+    setRemindBeforeStart(15);
+    setRemindAfterEnd(15);
+    setShowSignButton(false);
+    setSelectedWeekdays([0, 1, 2, 3, 4]); // Mon-Fri by default
 
     // Reset errors
     setErrors({
@@ -144,26 +155,26 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
       officeEndTime: null,
       endTime: null,
       selectedWeekdays: null,
-    })
-  }
+    });
+  };
 
   // Helper function to convert time to minutes for comparison
   const timeToMinutes = (date) => {
-    return date.getHours() * 60 + date.getMinutes()
-  }
+    return date.getHours() * 60 + date.getMinutes();
+  };
 
   // Helper function to calculate time difference in minutes, handling overnight shifts
   const getTimeDifferenceInMinutes = (startDate, endDate) => {
-    const startMinutes = timeToMinutes(startDate)
-    let endMinutes = timeToMinutes(endDate)
+    const startMinutes = timeToMinutes(startDate);
+    let endMinutes = timeToMinutes(endDate);
 
     // If end time is earlier than start time, assume it's the next day
     if (endMinutes < startMinutes) {
-      endMinutes += 24 * 60 // Add 24 hours in minutes
+      endMinutes += 24 * 60; // Add 24 hours in minutes
     }
 
-    return endMinutes - startMinutes
-  }
+    return endMinutes - startMinutes;
+  };
 
   const validateForm = () => {
     const newErrors = {
@@ -173,80 +184,94 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
       officeEndTime: null,
       endTime: null,
       selectedWeekdays: null,
-    }
+    };
 
     // Validate name
     if (!name.trim()) {
-      newErrors.name = t("nameRequired")
+      newErrors.name = t("nameRequired");
     } else if (name.length > 200) {
-      newErrors.name = t("nameTooLong")
+      newErrors.name = t("nameTooLong");
     } else {
       // Check for invalid characters using regex
       // Allow letters, numbers, spaces, and common punctuation from all languages
-      const nameRegex = /^[\p{L}\p{N}\s\p{P}]+$/u
+      const nameRegex = /^[\p{L}\p{N}\s\p{P}]+$/u;
       if (!nameRegex.test(name)) {
-        newErrors.name = t("nameInvalidChars")
+        newErrors.name = t("nameInvalidChars");
       } else {
         // Check for uniqueness
-        const normalizedName = name.trim().toLowerCase()
-        const isDuplicate = existingShifts.some((shift) => shift.name.trim().toLowerCase() === normalizedName)
+        const normalizedName = name.trim().toLowerCase();
+        const isDuplicate = existingShifts.some(
+          (shift) => shift.name.trim().toLowerCase() === normalizedName
+        );
         if (isDuplicate) {
-          newErrors.name = t("nameAlreadyExists")
+          newErrors.name = t("nameAlreadyExists");
         }
       }
     }
 
     // Validate departure time vs start time
-    const departureToStartDiff = getTimeDifferenceInMinutes(departureTime, startTime)
+    const departureToStartDiff = getTimeDifferenceInMinutes(
+      departureTime,
+      startTime
+    );
     if (departureToStartDiff < 5) {
-      newErrors.departureTime = t("departureTimeBeforeStart")
+      newErrors.departureTime = t("departureTimeBeforeStart");
     }
 
     // Validate start time vs office end time
-    const startToOfficeEndDiff = getTimeDifferenceInMinutes(startTime, officeEndTime)
+    const startToOfficeEndDiff = getTimeDifferenceInMinutes(
+      startTime,
+      officeEndTime
+    );
     if (startToOfficeEndDiff < 0) {
-      newErrors.startTime = t("startTimeBeforeOfficeEnd")
+      newErrors.startTime = t("startTimeBeforeOfficeEnd");
     } else if (startToOfficeEndDiff < 120) {
       // 2 hours = 120 minutes
-      newErrors.officeEndTime = t("minWorkingHours")
+      newErrors.officeEndTime = t("minWorkingHours");
     }
 
     // Validate office end time vs end time
-    const officeEndToEndDiff = getTimeDifferenceInMinutes(officeEndTime, endTime)
+    const officeEndToEndDiff = getTimeDifferenceInMinutes(
+      officeEndTime,
+      endTime
+    );
     if (officeEndToEndDiff < 0) {
-      newErrors.endTime = t("endTimeAfterOfficeEnd")
+      newErrors.endTime = t("endTimeAfterOfficeEnd");
     } else if (officeEndToEndDiff > 0 && officeEndToEndDiff < 30) {
-      newErrors.endTime = t("minOvertimeMinutes")
+      newErrors.endTime = t("minOvertimeMinutes");
     }
 
     // Validate selected weekdays
     if (selectedWeekdays.length === 0) {
-      newErrors.selectedWeekdays = t("selectAtLeastOneDay")
+      newErrors.selectedWeekdays = t("selectAtLeastOneDay");
     }
 
-    setErrors(newErrors)
+    setErrors(newErrors);
 
     // Check if form is valid (no errors)
-    const isValid = Object.values(newErrors).every((error) => error === null)
-    setIsFormValid(isValid)
+    const isValid = Object.values(newErrors).every((error) => error === null);
+    setIsFormValid(isValid);
 
-    return isValid
-  }
+    return isValid;
+  };
 
   const handleSave = async () => {
     // Final validation before saving
     if (!validateForm()) {
       // Show first error in an alert
-      const firstError = Object.values(errors).find((error) => error !== null)
+      const firstError = Object.values(errors).find((error) => error !== null);
       if (firstError) {
-        Alert.alert(t("error"), firstError)
+        Alert.alert(t("error"), firstError);
       }
-      return
+      return;
     }
 
     const formatTime = (date) => {
-      return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`
-    }
+      return `${date.getHours().toString().padStart(2, "0")}:${date
+        .getMinutes()
+        .toString()
+        .padStart(2, "0")}`;
+    };
 
     const shiftData = {
       name: name.trim(),
@@ -258,57 +283,57 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
       remindAfterEnd,
       showSignButton,
       days: selectedWeekdays,
-    }
+    };
 
     try {
       if (editShift) {
-        await updateShift({ ...shiftData, id: editShift.id })
+        await updateShift({ ...shiftData, id: editShift.id });
       } else {
-        await addShift(shiftData)
+        await addShift(shiftData);
       }
 
-      onClose(true)
+      onClose(true);
     } catch (error) {
-      console.error("Failed to save shift:", error)
-      Alert.alert(t("error"), t("failedToSaveShift"))
+      console.error("Failed to save shift:", error);
+      Alert.alert(t("error"), t("failedToSaveShift"));
     }
-  }
+  };
 
   const toggleWeekday = (index) => {
     if (selectedWeekdays.includes(index)) {
-      setSelectedWeekdays(selectedWeekdays.filter((day) => day !== index))
+      setSelectedWeekdays(selectedWeekdays.filter((day) => day !== index));
     } else {
-      setSelectedWeekdays([...selectedWeekdays, index])
+      setSelectedWeekdays([...selectedWeekdays, index]);
     }
-  }
+  };
 
   const showTimePickerFor = (field) => {
-    setCurrentTimeField(field)
-    setShowTimePicker(true)
-  }
+    setCurrentTimeField(field);
+    setShowTimePicker(true);
+  };
 
   const onTimeChange = (event, selectedTime) => {
     if (Platform.OS === "android") {
-      setShowTimePicker(false)
+      setShowTimePicker(false);
     }
 
     if (selectedTime) {
       switch (currentTimeField) {
         case "departure":
-          setDepartureTime(selectedTime)
-          break
+          setDepartureTime(selectedTime);
+          break;
         case "start":
-          setStartTime(selectedTime)
-          break
+          setStartTime(selectedTime);
+          break;
         case "end":
-          setEndTime(selectedTime)
-          break
+          setEndTime(selectedTime);
+          break;
         case "officeEnd":
-          setOfficeEndTime(selectedTime)
-          break
+          setOfficeEndTime(selectedTime);
+          break;
       }
     }
-  }
+  };
 
   const styles = StyleSheet.create({
     modalContainer: {
@@ -367,7 +392,13 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      borderWidth: errors.departureTime || errors.startTime || errors.officeEndTime || errors.endTime ? 1 : 0,
+      borderWidth:
+        errors.departureTime ||
+        errors.startTime ||
+        errors.officeEndTime ||
+        errors.endTime
+          ? 1
+          : 0,
       borderColor: theme.colors.danger,
     },
     timeText: {
@@ -464,15 +495,25 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
     disabledButtonText: {
       color: theme.colors.textSecondary,
     },
-  })
+  });
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={() => onClose(false)}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => onClose(false)}
+    >
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{editShift ? t("editShift") : t("addNewShift")}</Text>
-            <TouchableOpacity style={styles.closeButton} onPress={() => onClose(false)}>
+            <Text style={styles.modalTitle}>
+              {editShift ? t("editShift") : t("addNewShift")}
+            </Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => onClose(false)}
+            >
               <Ionicons name="close" size={24} color={theme.colors.text} />
             </TouchableOpacity>
           </View>
@@ -489,67 +530,117 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
                 onChangeText={setName}
                 maxLength={200}
               />
-              {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+              {errors.name && (
+                <Text style={styles.errorText}>{errors.name}</Text>
+              )}
             </View>
 
             {/* Giờ xuất phát */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>{t("departureTime")}</Text>
               <TouchableOpacity
-                style={[styles.timePickerButton, errors.departureTime && { borderColor: theme.colors.danger }]}
+                style={[
+                  styles.timePickerButton,
+                  errors.departureTime && { borderColor: theme.colors.danger },
+                ]}
                 onPress={() => showTimePickerFor("departure")}
               >
                 <Text style={styles.timeText}>
-                  {departureTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {departureTime.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </Text>
-                <Ionicons name="time-outline" size={20} color={theme.colors.text} />
+                <Ionicons
+                  name="time-outline"
+                  size={20}
+                  color={theme.colors.text}
+                />
               </TouchableOpacity>
-              {errors.departureTime && <Text style={styles.errorText}>{errors.departureTime}</Text>}
+              {errors.departureTime && (
+                <Text style={styles.errorText}>{errors.departureTime}</Text>
+              )}
             </View>
 
             {/* Giờ bắt đầu */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>{t("startTime")}</Text>
               <TouchableOpacity
-                style={[styles.timePickerButton, errors.startTime && { borderColor: theme.colors.danger }]}
+                style={[
+                  styles.timePickerButton,
+                  errors.startTime && { borderColor: theme.colors.danger },
+                ]}
                 onPress={() => showTimePickerFor("start")}
               >
                 <Text style={styles.timeText}>
-                  {startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {startTime.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </Text>
-                <Ionicons name="time-outline" size={20} color={theme.colors.text} />
+                <Ionicons
+                  name="time-outline"
+                  size={20}
+                  color={theme.colors.text}
+                />
               </TouchableOpacity>
-              {errors.startTime && <Text style={styles.errorText}>{errors.startTime}</Text>}
+              {errors.startTime && (
+                <Text style={styles.errorText}>{errors.startTime}</Text>
+              )}
             </View>
 
             {/* Giờ kết thúc HC */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>{t("officeEndTime")}</Text>
               <TouchableOpacity
-                style={[styles.timePickerButton, errors.officeEndTime && { borderColor: theme.colors.danger }]}
+                style={[
+                  styles.timePickerButton,
+                  errors.officeEndTime && { borderColor: theme.colors.danger },
+                ]}
                 onPress={() => showTimePickerFor("officeEnd")}
               >
                 <Text style={styles.timeText}>
-                  {officeEndTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {officeEndTime.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </Text>
-                <Ionicons name="time-outline" size={20} color={theme.colors.text} />
+                <Ionicons
+                  name="time-outline"
+                  size={20}
+                  color={theme.colors.text}
+                />
               </TouchableOpacity>
-              {errors.officeEndTime && <Text style={styles.errorText}>{errors.officeEndTime}</Text>}
+              {errors.officeEndTime && (
+                <Text style={styles.errorText}>{errors.officeEndTime}</Text>
+              )}
             </View>
 
             {/* Giờ kết thúc ca */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>{t("endTime")}</Text>
               <TouchableOpacity
-                style={[styles.timePickerButton, errors.endTime && { borderColor: theme.colors.danger }]}
+                style={[
+                  styles.timePickerButton,
+                  errors.endTime && { borderColor: theme.colors.danger },
+                ]}
                 onPress={() => showTimePickerFor("end")}
               >
                 <Text style={styles.timeText}>
-                  {endTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {endTime.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </Text>
-                <Ionicons name="time-outline" size={20} color={theme.colors.text} />
+                <Ionicons
+                  name="time-outline"
+                  size={20}
+                  color={theme.colors.text}
+                />
               </TouchableOpacity>
-              {errors.endTime && <Text style={styles.errorText}>{errors.endTime}</Text>}
+              {errors.endTime && (
+                <Text style={styles.errorText}>{errors.endTime}</Text>
+              )}
             </View>
 
             {showTimePicker && (
@@ -558,10 +649,10 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
                   currentTimeField === "departure"
                     ? departureTime
                     : currentTimeField === "start"
-                      ? startTime
-                      : currentTimeField === "end"
-                        ? endTime
-                        : officeEndTime
+                    ? startTime
+                    : currentTimeField === "end"
+                    ? endTime
+                    : officeEndTime
                 }
                 mode="time"
                 is24Hour={true}
@@ -578,10 +669,10 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
                 style={styles.reminderValue}
                 onPress={() => {
                   // Toggle between common values
-                  const values = [5, 10, 15, 30]
-                  const currentIndex = values.indexOf(remindBeforeStart)
-                  const nextIndex = (currentIndex + 1) % values.length
-                  setRemindBeforeStart(values[nextIndex])
+                  const values = [5, 10, 15, 30];
+                  const currentIndex = values.indexOf(remindBeforeStart);
+                  const nextIndex = (currentIndex + 1) % values.length;
+                  setRemindBeforeStart(values[nextIndex]);
                 }}
               >
                 <Text style={styles.reminderValueText}>
@@ -597,10 +688,10 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
                 style={styles.reminderValue}
                 onPress={() => {
                   // Toggle between common values
-                  const values = [5, 10, 15, 30]
-                  const currentIndex = values.indexOf(remindAfterEnd)
-                  const nextIndex = (currentIndex + 1) % values.length
-                  setRemindAfterEnd(values[nextIndex])
+                  const values = [5, 10, 15, 30];
+                  const currentIndex = values.indexOf(remindAfterEnd);
+                  const nextIndex = (currentIndex + 1) % values.length;
+                  setRemindAfterEnd(values[nextIndex]);
                 }}
               >
                 <Text style={styles.reminderValueText}>
@@ -629,27 +720,54 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
                     key={index}
                     style={[
                       styles.weekdayButton,
-                      selectedWeekdays.includes(index) && styles.weekdayButtonSelected,
-                      errors.selectedWeekdays && { borderColor: theme.colors.danger },
+                      selectedWeekdays.includes(index) &&
+                        styles.weekdayButtonSelected,
+                      errors.selectedWeekdays && {
+                        borderColor: theme.colors.danger,
+                      },
                     ]}
                     onPress={() => toggleWeekday(index)}
                   >
-                    <Text style={[styles.weekdayText, selectedWeekdays.includes(index) && styles.weekdayTextSelected]}>
+                    <Text
+                      style={[
+                        styles.weekdayText,
+                        selectedWeekdays.includes(index) &&
+                          styles.weekdayTextSelected,
+                      ]}
+                    >
                       {day.substring(0, 1)}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
-              {errors.selectedWeekdays && <Text style={styles.errorText}>{errors.selectedWeekdays}</Text>}
+              {errors.selectedWeekdays && (
+                <Text style={styles.errorText}>{errors.selectedWeekdays}</Text>
+              )}
             </View>
 
             {/* Nút hủy và lưu */}
             <View style={styles.buttonRow}>
-              <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => onClose(false)}>
-                <Text style={[styles.buttonText, styles.cancelButtonText]}>{t("cancel")}</Text>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton]}
+                onPress={() => onClose(false)}
+              >
+                <Text style={[styles.buttonText, styles.cancelButtonText]}>
+                  {t("cancel")}
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave} disabled={!isFormValid}>
-                <Text style={[styles.buttonText, isFormValid ? styles.saveButtonText : styles.disabledButtonText]}>
+              <TouchableOpacity
+                style={[styles.button, styles.saveButton]}
+                onPress={handleSave}
+                disabled={!isFormValid}
+              >
+                <Text
+                  style={[
+                    styles.buttonText,
+                    isFormValid
+                      ? styles.saveButtonText
+                      : styles.disabledButtonText,
+                  ]}
+                >
                   {t("save")}
                 </Text>
               </TouchableOpacity>
@@ -658,6 +776,5 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
         </View>
       </View>
     </Modal>
-  )
+  );
 }
-

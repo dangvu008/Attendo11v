@@ -1,145 +1,148 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
+import { StatusBar } from "expo-status-bar"
 import { NavigationContainer } from "@react-navigation/native"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
-import { StatusBar } from "expo-status-bar"
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { SafeAreaProvider } from "react-native-safe-area-context"
-import { GestureHandlerRootView } from "react-native-gesture-handler"
-import { LogBox, AppState, Alert } from "react-native"
-import * as Notifications from "expo-notifications"
-import * as ErrorUtils from "ErrorUtils"
-import Constants from "expo-constants"
+import { Ionicons } from "@expo/vector-icons"
+import { AppProvider } from "./context/AppContext"
+import HomeScreen from "./screens/HomeScreen"
+import SettingsScreen from "./screens/SettingsScreen"
+import StatsScreen from "./screens/StatsScreen"
+import WorkScheduleScreen from "./screens/WorkScheduleScreen"
+import AddNoteScreen from "./screens/AddNoteScreen"
+import AddShiftScreen from "./screens/AddShiftScreen"
+import DataManagementScreen from "./screens/DataManagementScreen"
+import { initializeDatabase } from "./utils/database"
+import { configureNotifications } from "./utils/notificationUtils"
+import { scheduleAutomaticBackup } from "./utils/dataBackupUtils"
+import { View, Text } from "react-native"
 
-// Add error boundary to catch and handle unhandled errors
-import { ErrorBoundary } from "./components/ErrorBoundary"
+const Stack = createNativeStackNavigator()
+const Tab = createBottomTabNavigator()
 
-// Ignore specific warnings
-LogBox.ignoreLogs([
-  "Non-serializable values were found in the navigation state",
-  "DatePickerIOS has been merged with DatePickerAndroid",
-])
-
-// Add global error handler
-const handleError = (error, isFatal) => {
-  console.error(`[Global Error] ${isFatal ? "Fatal:" : "Non-fatal:"} ${error.message}`, error.stack)
-
-  // You could log to a service or show an alert to the user
-  if (isFatal) {
-    Alert.alert("Unexpected Error Occurred", "The app encountered an unexpected error and needs to restart.", [
-      {
-        text: "OK",
-        onPress: () => {
-          // In a real app, you might want to restart the app or navigate to a safe screen
-        },
-      },
-    ])
+// Error boundary component for Snack
+const ErrorBoundary = ({ children }) => {
+  try {
+    return children
+  } catch (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Something went wrong</Text>
+        <Text style={{ textAlign: "center" }}>{error.message || "An unknown error occurred"}</Text>
+      </View>
+    )
   }
 }
 
-// Set up the error handler
-if (!Constants.expoConfig.extra.environment === "development") {
-  ErrorUtils.setGlobalHandler(handleError)
+// Home stack navigator
+const HomeStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="HomeScreen" component={HomeScreen} />
+      <Stack.Screen name="AddNote" component={AddNoteScreen} />
+    </Stack.Navigator>
+  )
 }
 
-// Import screens
-import HomeScreen from "./screens/HomeScreen"
-import SettingsScreen from "./screens/SettingsScreen"
-import StatisticsScreen from "./screens/StatisticsScreen"
+// Stats stack navigator
+const StatsStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="StatsScreen" component={StatsScreen} />
+    </Stack.Navigator>
+  )
+}
 
-// Import contexts
-import { ThemeProvider } from "./contexts/ThemeContext"
-import { I18nProvider } from "./contexts/I18nContext"
-import { ShiftProvider } from "./contexts/ShiftContext"
-import { WorkStatusProvider } from "./contexts/WorkStatusContext"
+// Settings stack navigator
+const SettingsStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
+      <Stack.Screen name="DataManagement" component={DataManagementScreen} />
+    </Stack.Navigator>
+  )
+}
 
-// Import utils
-import { initializeDatabase } from "./utils/database"
+// Work Schedule stack navigator
+const WorkScheduleStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="WorkScheduleScreen" component={WorkScheduleScreen} />
+      <Stack.Screen name="AddShift" component={AddShiftScreen} />
+    </Stack.Navigator>
+  )
+}
 
-const Stack = createNativeStackNavigator()
+// Main tab navigator
+const TabNavigator = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName
+
+          if (route.name === "Home") {
+            iconName = focused ? "home" : "home-outline"
+          } else if (route.name === "Stats") {
+            iconName = focused ? "stats-chart" : "stats-chart-outline"
+          } else if (route.name === "Settings") {
+            iconName = focused ? "settings" : "settings-outline"
+          } else if (route.name === "Schedule") {
+            iconName = focused ? "calendar" : "calendar-outline"
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />
+        },
+        tabBarActiveTintColor: "#6a5acd",
+        tabBarInactiveTintColor: "gray",
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "500",
+        },
+        tabBarStyle: {
+          paddingVertical: 5,
+        },
+      })}
+    >
+      <Tab.Screen name="Home" component={HomeStack} />
+      <Tab.Screen name="Stats" component={StatsStack} />
+      <Tab.Screen name="Schedule" component={WorkScheduleStack} />
+      <Tab.Screen name="Settings" component={SettingsStack} />
+    </Tab.Navigator>
+  )
+}
 
 export default function App() {
-  const [isReady, setIsReady] = useState(false)
-
   useEffect(() => {
-    // Initialize app data
-    const initializeApp = async () => {
-      try {
-        await initializeDatabase()
-        setIsReady(true)
-      } catch (error) {
-        console.error("Failed to initialize app:", error)
-        // Show an error alert to the user
-        Alert.alert(
-          "Initialization Error",
-          "There was a problem initializing the app. Please try restarting the app.",
-          [{ text: "OK" }],
-        )
-        // Still set isReady to true so the app can at least render
-        setIsReady(true)
-      }
-    }
+    // Initialize the database with sample data
+    try {
+      initializeDatabase()
 
-    initializeApp()
+      // Configure notifications when app starts
+      configureNotifications()
 
-    // Set up notification listeners
-    const notificationListener = Notifications.addNotificationReceivedListener((notification) => {
-      console.log("[Notification] Received:", notification)
-    })
-
-    const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
-      console.log("[Notification] Response received:", response)
-      // Handle notification interaction here
-    })
-
-    // Set up app state listener to refresh data when app comes to foreground
-    const appStateListener = AppState.addEventListener("change", (nextAppState) => {
-      if (nextAppState === "active") {
-        console.log("[App] App has come to the foreground, refreshing data")
-        // You could refresh your data here
-      }
-    })
-
-    return () => {
-      // Clean up listeners
-      notificationListener.remove()
-      responseListener.remove()
-      appStateListener.remove()
+      // Schedule automatic backup
+      scheduleAutomaticBackup()
+    } catch (error) {
+      console.error("Failed to initialize:", error)
     }
   }, [])
 
-  if (!isReady) {
-    return null
-  }
-
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <ErrorBoundary>
       <SafeAreaProvider>
-        <ErrorBoundary>
-          <ThemeProvider>
-            <I18nProvider>
-              <ShiftProvider>
-                <WorkStatusProvider>
-                  <NavigationContainer>
-                    <Stack.Navigator
-                      initialRouteName="Home"
-                      screenOptions={{
-                        headerShown: false,
-                      }}
-                    >
-                      <Stack.Screen name="Home" component={HomeScreen} />
-                      <Stack.Screen name="Settings" component={SettingsScreen} />
-                      <Stack.Screen name="Statistics" component={StatisticsScreen} />
-                    </Stack.Navigator>
-                  </NavigationContainer>
-                  <StatusBar style="auto" />
-                </WorkStatusProvider>
-              </ShiftProvider>
-            </I18nProvider>
-          </ThemeProvider>
-        </ErrorBoundary>
+        <AppProvider>
+          <NavigationContainer>
+            <TabNavigator />
+            <StatusBar style="auto" />
+          </NavigationContainer>
+        </AppProvider>
       </SafeAreaProvider>
-    </GestureHandlerRootView>
+    </ErrorBoundary>
   )
 }
 

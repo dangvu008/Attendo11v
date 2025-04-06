@@ -1,15 +1,18 @@
 {
   "expo": {
-    "name": "Attendo",
-    "slug": "attendo",
+    "name": "Attendo11",
+    "slug": "attendo11",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "https://snack-code-uploads.s3.us-west-1.amazonaws.com/~asset/2800940fbecd3c70c79118b9d2d22e37",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "https://snack-code-uploads.s3.us-west-1.amazonaws.com/~asset/2800940fbecd3c70c79118b9d2d22e37",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#6a5acd"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
@@ -17,15 +20,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "softwareKeyboardLayoutMode": "pan"
+        "foregroundImage": "https://snack-code-uploads.s3.us-west-1.amazonaws.com/~asset/2800940fbecd3c70c79118b9d2d22e37",
+        "backgroundColor": "#6a5acd"
+      }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "https://snack-code-uploads.s3.us-west-1.amazonaws.com/~asset/2800940fbecd3c70c79118b9d2d22e37"
     },
-    "plugins": ["expo-localization"]
+    "description": "A time management app for tracking work shifts and attendance"
   }
 }
 
