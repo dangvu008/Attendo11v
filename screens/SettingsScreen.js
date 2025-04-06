@@ -11,7 +11,7 @@ import { getShifts, removeShift } from "../utils/database"
 import AddShiftModal from "../components/AddShiftModal"
 
 // Declare __DEV__ if it's not already defined (e.g., in a webpack config)
-declare const __DEV__: boolean
+declare const __DEV__: boolean;
 
 export default function SettingsScreen() {
   const navigation = useNavigation()

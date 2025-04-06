@@ -87,7 +87,7 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
   // Validate form whenever values change
   useEffect(() => {
     validateForm()
-  }, [title, content, reminderDate, explicitReminderDays, associatedShiftIds])
+  }, [title, content, reminderDate, explicitReminderDays, associatedShiftIds, existingNotes])
 
   const resetForm = () => {
     setId("")

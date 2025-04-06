@@ -291,16 +291,6 @@ export default function ActionButton() {
       fontWeight: "bold",
       marginLeft: 8,
     },
-    statusText: {
-      marginTop: 8,
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-      textAlign: "center",
-    },
-    statusHistory: {
-      marginTop: 16,
-      alignItems: "center",
-    },
     historyItem: {
       fontSize: 14,
       color: theme.colors.textSecondary,
