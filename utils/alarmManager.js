@@ -1,5 +1,5 @@
 /**
- * Alarm Manager - Triển khai hệ thống quản lý thông báo thông minh
+ * Alarm Manager - Module quản lý thông báo thông minh
  *
  * Giải quyết các vấn đề:
  * 1. Ngăn chặn tạo trùng lặp thông báo
