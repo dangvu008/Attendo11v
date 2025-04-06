@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -106,16 +106,7 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
   // Validate form whenever any field changes
   useEffect(() => {
     validateForm();
-  }, [
-    name,
-    departureTime,
-    startTime,
-    endTime,
-    officeEndTime,
-    selectedWeekdays,
-    existingShifts,
-    validateForm,
-  ]);
+  }, [validateForm]);
 
   const resetForm = () => {
     setName("");
@@ -176,7 +167,7 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
     return endMinutes - startMinutes;
   };
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors = {
       name: null,
       departureTime: null,
@@ -253,7 +244,17 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
     setIsFormValid(isValid);
 
     return isValid;
-  };
+  }, [
+    name,
+    departureTime,
+    startTime,
+    endTime,
+    officeEndTime,
+    selectedWeekdays,
+    existingShifts,
+    t,
+    getTimeDifferenceInMinutes,
+  ]);
 
   const handleSave = async () => {
     // Final validation before saving
