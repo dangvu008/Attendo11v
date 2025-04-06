@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -97,33 +97,9 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
   // Validate form whenever values change
   useEffect(() => {
     validateForm();
-  }, [
-    title,
-    content,
-    reminderDate,
-    explicitReminderDays,
-    associatedShiftIds,
-    existingNotes,
-    validateForm,
-  ]);
+  }, [validateForm]);
 
-  const resetForm = () => {
-    setId("");
-    setTitle("");
-    setContent("");
-    setReminderDate(new Date());
-    setExplicitReminderDays([]);
-    setAssociatedShiftIds([]);
-    setErrors({
-      title: null,
-      content: null,
-      reminderTime: null,
-      explicitReminderDays: null,
-      uniqueness: null,
-    });
-  };
-
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors = {
       title: null,
       content: null,
@@ -169,6 +145,29 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
 
     // Return true if no errors
     return !Object.values(newErrors).some((error) => error !== null);
+  }, [
+    title,
+    content,
+    explicitReminderDays,
+    associatedShiftIds,
+    existingNotes,
+    t,
+  ]);
+
+  const resetForm = () => {
+    setId("");
+    setTitle("");
+    setContent("");
+    setReminderDate(new Date());
+    setExplicitReminderDays([]);
+    setAssociatedShiftIds([]);
+    setErrors({
+      title: null,
+      content: null,
+      reminderTime: null,
+      explicitReminderDays: null,
+      uniqueness: null,
+    });
   };
 
   const handleSave = async () => {

@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,12 +11,12 @@ import {
   Alert,
   RefreshControl,
   ScrollView,
-} from "react-native"
-import { Feather, Ionicons } from "@expo/vector-icons"
-import { useTheme } from "../contexts/ThemeContext"
-import { useI18n } from "../contexts/I18nContext"
-import { useShift } from "../contexts/ShiftContext"
-import { getWeatherSettings, saveWeatherSettings } from "../utils/database"
+} from "react-native";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../contexts/ThemeContext";
+import { useI18n } from "../contexts/I18nContext";
+import { useShift } from "../contexts/ShiftContext";
+import { getWeatherSettings, saveWeatherSettings } from "../utils/database";
 import {
   fetchWeatherData,
   getWeatherIcon,
@@ -24,153 +24,157 @@ import {
   getCurrentLocation,
   getCityFromCoordinates,
   generateWeatherAlerts,
-} from "../utils/weatherService"
+} from "../utils/weatherService";
 
 export default function WeatherForecast() {
-  const { theme } = useTheme()
-  const { t } = useI18n()
-  const { currentShift } = useShift()
+  const { theme } = useTheme();
+  const { t } = useI18n();
+  const { currentShift } = useShift();
 
-  const [weatherData, setWeatherData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [showAlert, setShowAlert] = useState(false)
-  const [weatherAlerts, setWeatherAlerts] = useState([])
-  const [showSettings, setShowSettings] = useState(false)
+  const [weatherData, setWeatherData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showAlert, setShowAlert] = useState(false);
+  const [weatherAlerts, setWeatherAlerts] = useState([]);
+  const [showSettings, setShowSettings] = useState(false);
   const [alertSettings, setAlertSettings] = useState({
     enabled: true,
     alertRain: true,
     alertCold: true,
     alertHeat: true,
     alertStorm: true,
-  })
-  const [location, setLocation] = useState(null)
-  const [cityName, setCityName] = useState(null)
-  const [refreshing, setRefreshing] = useState(false)
-  const [expanded, setExpanded] = useState(false)
+  });
+  const [location, setLocation] = useState(null);
+  const [cityName, setCityName] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const checkWeatherAlerts = useCallback(() => {
     if (!weatherData || !currentShift || !alertSettings.enabled) {
-      setWeatherAlerts([])
-      setShowAlert(false)
-      return
+      setWeatherAlerts([]);
+      setShowAlert(false);
+      return;
     }
 
     // Generate alerts based on shift times and weather data
-    const alerts = generateWeatherAlerts(weatherData, currentShift)
+    const alerts = generateWeatherAlerts(weatherData, currentShift);
 
     // Filter alerts based on user settings
     const filteredAlerts = alerts.filter((alert) => {
-      const { type } = alert.condition
+      const { type } = alert.condition;
 
-      if (type === "rain" && !alertSettings.alertRain) return false
-      if (type === "cold" && !alertSettings.alertCold) return false
-      if (type === "hot" && !alertSettings.alertHeat) return false
-      if ((type === "storm" || type === "wind") && !alertSettings.alertStorm) return false
+      if (type === "rain" && !alertSettings.alertRain) return false;
+      if (type === "cold" && !alertSettings.alertCold) return false;
+      if (type === "hot" && !alertSettings.alertHeat) return false;
+      if ((type === "storm" || type === "wind") && !alertSettings.alertStorm)
+        return false;
 
-      return true
-    })
+      return true;
+    });
 
-    setWeatherAlerts(filteredAlerts)
-    setShowAlert(filteredAlerts.length > 0)
-  }, [weatherData, currentShift, alertSettings])
+    setWeatherAlerts(filteredAlerts);
+    setShowAlert(filteredAlerts.length > 0);
+  }, [weatherData, currentShift, alertSettings]);
 
   useEffect(() => {
     // Lấy vị trí và dữ liệu thời tiết khi component mount
-    initWeatherData()
+    initWeatherData();
 
     // Lấy cài đặt cảnh báo thời tiết
-    loadAlertSettings()
+    loadAlertSettings();
 
     // Thiết lập cập nhật định kỳ (30 phút)
-    const refreshInterval = setInterval(
-      () => {
-        refreshWeatherData()
-      },
-      30 * 60 * 1000,
-    )
+    const refreshInterval = setInterval(() => {
+      refreshWeatherData();
+    }, 30 * 60 * 1000);
 
-    return () => clearInterval(refreshInterval)
-  }, [])
+    return () => clearInterval(refreshInterval);
+  }, [initWeatherData, refreshWeatherData]);
 
   // Kiểm tra điều kiện thời tiết cực đoan khi dữ liệu thời tiết hoặc ca làm việc thay đổi
   useEffect(() => {
     if (weatherData && alertSettings.enabled && currentShift) {
-      checkWeatherAlerts()
+      checkWeatherAlerts();
     }
-  }, [weatherData, currentShift, alertSettings, checkWeatherAlerts])
+  }, [weatherData, currentShift, alertSettings, checkWeatherAlerts]);
 
   const initWeatherData = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
       // Get user's location
-      const userLocation = await getCurrentLocation()
-      setLocation(userLocation)
+      const userLocation = await getCurrentLocation();
+      setLocation(userLocation);
 
       // Get city name
-      const city = await getCityFromCoordinates(userLocation.latitude, userLocation.longitude)
-      setCityName(city)
+      const city = await getCityFromCoordinates(
+        userLocation.latitude,
+        userLocation.longitude
+      );
+      setCityName(city);
 
       // Fetch weather data
-      await loadWeatherData(userLocation)
+      await loadWeatherData(userLocation);
     } catch (error) {
-      console.error("Failed to initialize weather data:", error)
+      console.error("Failed to initialize weather data:", error);
 
       if (error.message === "Location permission denied") {
-        setError(t("locationPermissionDenied"))
+        setError(t("locationPermissionDenied"));
       } else {
-        setError(t("weatherInitError"))
+        setError(t("weatherInitError"));
       }
 
       // Fall back to mock data
-      setWeatherData(generateMockWeatherData())
+      setWeatherData(generateMockWeatherData());
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const loadAlertSettings = async () => {
     try {
-      const settings = await getWeatherSettings()
+      const settings = await getWeatherSettings();
       if (settings) {
-        setAlertSettings(settings)
+        setAlertSettings(settings);
       }
     } catch (error) {
-      console.error("Failed to load weather settings:", error)
+      console.error("Failed to load weather settings:", error);
     }
-  }
+  };
 
   const loadWeatherData = async (locationData) => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
       if (!locationData) {
-        throw new Error("No location data available")
+        throw new Error("No location data available");
       }
 
-      const data = await fetchWeatherData(locationData.latitude, locationData.longitude)
-      setWeatherData(data)
+      const data = await fetchWeatherData(
+        locationData.latitude,
+        locationData.longitude
+      );
+      setWeatherData(data);
     } catch (error) {
-      console.error("Failed to load weather data:", error)
-      setError(t("weatherLoadError"))
+      console.error("Failed to load weather data:", error);
+      setError(t("weatherLoadError"));
 
       // Fall back to mock data
-      setWeatherData(generateMockWeatherData())
+      setWeatherData(generateMockWeatherData());
     } finally {
-      setLoading(false)
-      setRefreshing(false)
+      setLoading(false);
+      setRefreshing(false);
     }
-  }
+  };
 
   const refreshWeatherData = async () => {
-    setRefreshing(true)
+    setRefreshing(true);
     try {
       // Get fresh location data
-      const userLocation = await getCurrentLocation()
-      setLocation(userLocation)
+      const userLocation = await getCurrentLocation();
+      setLocation(userLocation);
 
       // Update city name if location has changed significantly
       if (
@@ -178,29 +182,35 @@ export default function WeatherForecast() {
         Math.abs(location.latitude - userLocation.latitude) > 0.01 ||
         Math.abs(location.longitude - userLocation.longitude) > 0.01
       ) {
-        const city = await getCityFromCoordinates(userLocation.latitude, userLocation.longitude)
-        setCityName(city)
+        const city = await getCityFromCoordinates(
+          userLocation.latitude,
+          userLocation.longitude
+        );
+        setCityName(city);
       }
 
-      await loadWeatherData(userLocation)
+      await loadWeatherData(userLocation);
     } catch (error) {
-      console.error("Failed to refresh weather data:", error)
-      setError(t("weatherLoadError"))
-      setRefreshing(false)
+      console.error("Failed to refresh weather data:", error);
+      setError(t("weatherLoadError"));
+      setRefreshing(false);
     }
-  }
+  };
 
   const toggleAlertSetting = async (setting) => {
-    const newSettings = { ...alertSettings, [setting]: !alertSettings[setting] }
-    setAlertSettings(newSettings)
+    const newSettings = {
+      ...alertSettings,
+      [setting]: !alertSettings[setting],
+    };
+    setAlertSettings(newSettings);
 
     try {
-      await saveWeatherSettings(newSettings)
+      await saveWeatherSettings(newSettings);
     } catch (error) {
-      console.error("Failed to save weather settings:", error)
-      Alert.alert(t("error"), t("failedToSaveSettings"))
+      console.error("Failed to save weather settings:", error);
+      Alert.alert(t("error"), t("failedToSaveSettings"));
     }
-  }
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -366,21 +376,25 @@ export default function WeatherForecast() {
       fontSize: 12,
       color: theme.colors.primary,
     },
-  })
+  });
 
   const renderWeatherAlerts = () => {
-    if (!showAlert || weatherAlerts.length === 0) return null
+    if (!showAlert || weatherAlerts.length === 0) return null;
 
     return (
       <View style={styles.alertContainer}>
         <Text style={styles.alertTitle}>{t("weatherAlert")}</Text>
 
         {weatherAlerts.map((alert, index) => {
-          const isLast = index === weatherAlerts.length - 1
-          const timeLabel = alert.time === "departure" ? t("departureTime") : t("endTime")
+          const isLast = index === weatherAlerts.length - 1;
+          const timeLabel =
+            alert.time === "departure" ? t("departureTime") : t("endTime");
 
           return (
-            <View key={index} style={[styles.alertItem, isLast && styles.alertItemLast]}>
+            <View
+              key={index}
+              style={[styles.alertItem, isLast && styles.alertItemLast]}
+            >
               <Text style={styles.alertText}>
                 <Text style={{ fontWeight: "bold" }}>
                   {timeLabel} ({alert.formattedTime})
@@ -388,14 +402,14 @@ export default function WeatherForecast() {
                 : {alert.condition.description}, {alert.condition.suggestion}.
               </Text>
             </View>
-          )
+          );
         })}
       </View>
-    )
-  }
+    );
+  };
 
   const renderWeatherDetails = (item) => {
-    if (!expanded || !item) return null
+    if (!expanded || !item) return null;
 
     return (
       <View style={styles.detailsContainer}>
@@ -412,15 +426,15 @@ export default function WeatherForecast() {
           <Text style={styles.detailValue}>{item.windSpeed} m/s</Text>
         </View>
       </View>
-    )
-  }
+    );
+  };
 
   if (loading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
-    )
+    );
   }
 
   if (error) {
@@ -431,23 +445,37 @@ export default function WeatherForecast() {
           <Feather name="refresh-cw" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
       </View>
-    )
+    );
   }
 
   return (
-    <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshWeatherData} />}>
+    <ScrollView
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={refreshWeatherData}
+        />
+      }
+    >
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <Text style={styles.title}>{t("weatherForecast")}</Text>
             {cityName && (
               <View style={styles.locationContainer}>
-                <Ionicons name="location" size={14} color={theme.colors.primary} />
+                <Ionicons
+                  name="location"
+                  size={14}
+                  color={theme.colors.primary}
+                />
                 <Text style={styles.locationText}>{cityName}</Text>
               </View>
             )}
           </View>
-          <TouchableOpacity style={styles.refreshButton} onPress={refreshWeatherData}>
+          <TouchableOpacity
+            style={styles.refreshButton}
+            onPress={refreshWeatherData}
+          >
             <Feather name="refresh-cw" size={20} color={theme.colors.primary} />
           </TouchableOpacity>
         </View>
@@ -457,23 +485,38 @@ export default function WeatherForecast() {
             weatherData.slice(0, 3).map((item, index) => (
               <View key={index} style={styles.hourlyForecast}>
                 <Text style={styles.time}>{item.time}</Text>
-                <Image source={getWeatherIcon(item.condition)} style={styles.weatherIcon} />
+                <Image
+                  source={getWeatherIcon(item.condition)}
+                  style={styles.weatherIcon}
+                />
                 <Text style={styles.temperature}>{item.temperature}°C</Text>
                 <Text style={styles.condition}>{t(item.condition)}</Text>
               </View>
             ))}
         </View>
 
-        {weatherData && weatherData.length > 0 && renderWeatherDetails(weatherData[0])}
+        {weatherData &&
+          weatherData.length > 0 &&
+          renderWeatherDetails(weatherData[0])}
 
-        <TouchableOpacity style={styles.expandButton} onPress={() => setExpanded(!expanded)}>
-          <Text style={styles.expandButtonText}>{expanded ? t("hideDetails") : t("showDetails")}</Text>
+        <TouchableOpacity
+          style={styles.expandButton}
+          onPress={() => setExpanded(!expanded)}
+        >
+          <Text style={styles.expandButtonText}>
+            {expanded ? t("hideDetails") : t("showDetails")}
+          </Text>
         </TouchableOpacity>
 
         {renderWeatherAlerts()}
 
-        <TouchableOpacity style={styles.settingsButton} onPress={() => setShowSettings(!showSettings)}>
-          <Text style={styles.settingsText}>{showSettings ? t("hideSettings") : t("showSettings")}</Text>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => setShowSettings(!showSettings)}
+        >
+          <Text style={styles.settingsText}>
+            {showSettings ? t("hideSettings") : t("showSettings")}
+          </Text>
         </TouchableOpacity>
 
         {showSettings && (
@@ -524,7 +567,9 @@ export default function WeatherForecast() {
 
             <View style={styles.settingRow}>
               <Text style={styles.settingLabel}>{t("alertStorm")}</Text>
-              <TouchableOpacity onPress={() => toggleAlertSetting("alertStorm")}>
+              <TouchableOpacity
+                onPress={() => toggleAlertSetting("alertStorm")}
+              >
                 <Feather
                   name={alertSettings.alertStorm ? "check-square" : "square"}
                   size={20}
@@ -536,6 +581,5 @@ export default function WeatherForecast() {
         )}
       </View>
     </ScrollView>
-  )
+  );
 }
-
