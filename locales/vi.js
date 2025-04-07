@@ -47,14 +47,16 @@ export const vi = {
   manageWorkShifts: "Quản lý ca làm việc",
   generalSettings: "Cài đặt chung",
   darkMode: "Chế độ tối",
-  darkModeDescription: "Bật chế độ tối để có trải nghiệm xem tốt hơn trong điều kiện ánh sáng yếu",
+  darkModeDescription:
+    "Bật chế độ tối để có trải nghiệm xem tốt hơn trong điều kiện ánh sáng yếu",
   language: "Ngôn ngữ",
   notificationSound: "Âm thanh thông báo",
   notificationSoundDescription: "Phát âm thanh khi có thông báo",
   vibration: "Rung thông báo",
   vibrationDescription: "Rung khi có thông báo",
   multiActionButton: "Nút đa chức năng",
-  multiActionButtonDescription: 'Hiển thị tất cả các chức năng thay vì chỉ "Đi làm"',
+  multiActionButtonDescription:
+    'Hiển thị tất cả các chức năng thay vì chỉ "Đi làm"',
 
   // Shift Management
   addNewShift: "Thêm ca làm việc mới",
@@ -84,7 +86,8 @@ export const vi = {
   startTimeBeforeOfficeEnd: "Giờ bắt đầu phải trước giờ kết thúc HC",
   endTimeAfterOfficeEnd: "Giờ kết thúc ca phải sau hoặc bằng giờ kết thúc HC",
   minWorkingHours: "Thời gian làm việc HC tối thiểu phải là 2 giờ",
-  minOvertimeMinutes: "Nếu có OT, giờ kết thúc ca phải sau giờ kết thúc HC ít nhất 30 phút",
+  minOvertimeMinutes:
+    "Nếu có OT, giờ kết thúc ca phải sau giờ kết thúc HC ít nhất 30 phút",
   selectAtLeastOneDay: "Vui lòng chọn ít nhất một ngày áp dụng ca",
   failedToSaveShift: "Lưu ca làm việc thất bại",
 
@@ -170,5 +173,4 @@ export const vi = {
   noShiftSelected: "Chưa chọn ca làm việc",
   selectedShiftsCount: "Đã chọn {{count}} ca",
   noShift: "Không theo ca (sử dụng ngày đã chọn)",
-}
-
+};

@@ -1,50 +1,61 @@
-"use client"
+"use client";
 
-import { useState, useCallback, useEffect } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Alert, FlatList } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { format, parseISO } from "date-fns"
-import { useFocusEffect } from "@react-navigation/native"
-import { useTheme } from "../contexts/ThemeContext"
-import { useI18n } from "../contexts/I18nContext"
-import { useShift } from "../contexts/ShiftContext"
-import { getNotes, deleteNote, getShifts } from "../utils/database"
-import AddNoteModal from "./AddNoteModal"
+import { useState, useCallback, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  FlatList,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { format, parseISO } from "date-fns";
+import { useFocusEffect } from "@react-navigation/native";
+import { useTheme } from "../contexts/ThemeContext";
+import { useI18n } from "../contexts/I18nContext";
+import { useShift } from "../contexts/ShiftContext";
+import { getNotes, deleteNote, getShifts } from "../utils/database";
+import AddNoteModal from "./AddNoteModal";
 
 export default function Notes() {
-  const { theme } = useTheme()
-  const { t } = useI18n()
-  const { currentShift } = useShift()
-  const [notes, setNotes] = useState([])
-  const [shifts, setShifts] = useState([])
-  const [currentDayOfWeek] = useState(format(new Date(), "EEE"))
-  const [showAddNote, setShowAddNote] = useState(false)
-  const [editingNote, setEditingNote] = useState(null)
-  const [maxNotesToShow, setMaxNotesToShow] = useState(3)
+  const { theme } = useTheme();
+  const { t } = useI18n();
+  const { currentShift } = useShift();
+  const [notes, setNotes] = useState([]);
+  const [shifts, setShifts] = useState([]);
+  const [currentDayOfWeek] = useState(format(new Date(), "EEE"));
+  const [showAddNote, setShowAddNote] = useState(false);
+  const [editingNote, setEditingNote] = useState(null);
+  const [maxNotesToShow, setMaxNotesToShow] = useState(3);
 
   // Load shifts for displaying shift names
   useEffect(() => {
     const loadShifts = async () => {
       try {
-        const allShifts = await getShifts()
-        setShifts(allShifts)
+        const allShifts = await getShifts();
+        setShifts(allShifts);
       } catch (error) {
-        console.error("Failed to load shifts:", error)
+        console.error("Failed to load shifts:", error);
       }
-    }
+    };
 
-    loadShifts()
-  }, [])
+    loadShifts();
+  }, []);
 
   const loadNotes = async () => {
     try {
-      const allNotes = await getNotes()
+      const allNotes = await getNotes();
 
       // Lọc ghi chú theo điều kiện
       const filteredNotes = allNotes.filter((note) => {
         // Điều kiện 1: Ghi chú theo ca - associatedShiftIds chứa ID của ca hiện tại
-        if (note.associatedShiftIds && note.associatedShiftIds.length > 0 && currentShift) {
-          return note.associatedShiftIds.includes(currentShift.id)
+        if (
+          note.associatedShiftIds &&
+          note.associatedShiftIds.length > 0 &&
+          currentShift
+        ) {
+          return note.associatedShiftIds.includes(currentShift.id);
         }
 
         // Điều kiện 2: Ghi chú chung - associatedShiftIds rỗng VÀ explicitReminderDays chứa ngày hiện tại
@@ -54,41 +65,49 @@ export default function Notes() {
           note.explicitReminderDays.length > 0
         ) {
           // Chuyển đổi ngày hiện tại sang index (0 = Mon, 1 = Tue, ...)
-          const dayIndex = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(currentDayOfWeek)
-          return note.explicitReminderDays.includes(dayIndex)
+          const dayIndex = [
+            "Mon",
+            "Tue",
+            "Wed",
+            "Thu",
+            "Fri",
+            "Sat",
+            "Sun",
+          ].indexOf(currentDayOfWeek);
+          return note.explicitReminderDays.includes(dayIndex);
         }
 
-        return false
-      })
+        return false;
+      });
 
       // Sắp xếp ghi chú theo thời gian nhắc nhở gần nhất
       const sortedNotes = filteredNotes.sort((a, b) => {
         // Tính toán thời gian nhắc nhở tiếp theo
-        const timeA = a.reminderTime ? a.reminderTime : "23:59"
-        const timeB = b.reminderTime ? b.reminderTime : "23:59"
+        const timeA = a.reminderTime ? a.reminderTime : "23:59";
+        const timeB = b.reminderTime ? b.reminderTime : "23:59";
 
         // So sánh thời gian
-        if (timeA < timeB) return -1
-        if (timeA > timeB) return 1
+        if (timeA < timeB) return -1;
+        if (timeA > timeB) return 1;
 
         // Nếu thời gian bằng nhau, sắp xếp theo updatedAt mới nhất
-        const dateA = a.updatedAt ? new Date(a.updatedAt) : new Date(0)
-        const dateB = b.updatedAt ? new Date(b.updatedAt) : new Date(0)
-        return dateB - dateA
-      })
+        const dateA = a.updatedAt ? new Date(a.updatedAt) : new Date(0);
+        const dateB = b.updatedAt ? new Date(b.updatedAt) : new Date(0);
+        return dateB - dateA;
+      });
 
       // Giới hạn số lượng ghi chú hiển thị
-      setNotes(sortedNotes.slice(0, maxNotesToShow))
+      setNotes(sortedNotes.slice(0, maxNotesToShow));
     } catch (error) {
-      console.error("Failed to load notes:", error)
+      console.error("Failed to load notes:", error);
     }
-  }
+  };
 
   useFocusEffect(
     useCallback(() => {
-      loadNotes()
-    }, [currentShift, currentDayOfWeek, maxNotesToShow]),
-  )
+      loadNotes();
+    }, [currentShift, currentDayOfWeek, maxNotesToShow, loadNotes])
+  );
 
   const handleDeleteNote = (noteId) => {
     Alert.alert(t("confirm"), t("deleteNoteConfirmation"), [
@@ -101,34 +120,34 @@ export default function Notes() {
         style: "destructive",
         onPress: async () => {
           try {
-            await deleteNote(noteId)
-            await loadNotes()
+            await deleteNote(noteId);
+            await loadNotes();
           } catch (error) {
-            console.error("Failed to delete note:", error)
+            console.error("Failed to delete note:", error);
           }
         },
       },
-    ])
-  }
+    ]);
+  };
 
   const handleEditNote = (note) => {
-    setEditingNote(note)
-    setShowAddNote(true)
-  }
+    setEditingNote(note);
+    setShowAddNote(true);
+  };
 
   const handleCloseModal = (saved = false) => {
-    setShowAddNote(false)
-    setEditingNote(null)
+    setShowAddNote(false);
+    setEditingNote(null);
 
     if (saved) {
-      loadNotes()
+      loadNotes();
     }
-  }
+  };
 
   const getShiftNameById = (shiftId) => {
-    const shift = shifts.find((s) => s.id === shiftId)
-    return shift ? shift.name : t("unknownShift")
-  }
+    const shift = shifts.find((s) => s.id === shiftId);
+    return shift ? shift.name : t("unknownShift");
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -262,7 +281,7 @@ export default function Notes() {
       color: theme.colors.primary,
       fontWeight: "bold",
     },
-  })
+  });
 
   const renderNoteItem = ({ item }) => (
     <View style={styles.noteCard}>
@@ -271,11 +290,25 @@ export default function Notes() {
           {item.title}
         </Text>
         <View style={styles.noteActions}>
-          <TouchableOpacity style={styles.actionButton} onPress={() => handleEditNote(item)}>
-            <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleEditNote(item)}
+          >
+            <Ionicons
+              name="create-outline"
+              size={20}
+              color={theme.colors.primary}
+            />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={() => handleDeleteNote(item.id)}>
-            <Ionicons name="trash-outline" size={20} color={theme.colors.danger} />
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleDeleteNote(item.id)}
+          >
+            <Ionicons
+              name="trash-outline"
+              size={20}
+              color={theme.colors.danger}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -286,13 +319,22 @@ export default function Notes() {
 
       {item.reminderTime && (
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Ionicons name="alarm-outline" size={16} color={theme.colors.primary} style={{ marginRight: 4 }} />
-          <Text style={styles.noteTime}>{format(parseISO(item.reminderTime), "HH:mm")}</Text>
+          <Ionicons
+            name="alarm-outline"
+            size={16}
+            color={theme.colors.primary}
+            style={{ marginRight: 4 }}
+          />
+          <Text style={styles.noteTime}>
+            {format(parseISO(item.reminderTime), "HH:mm")}
+          </Text>
         </View>
       )}
 
       <View style={styles.noteFooter}>
-        <Text style={styles.noteDate}>{item.createdAt ? format(parseISO(item.createdAt), "dd/MM/yyyy") : ""}</Text>
+        <Text style={styles.noteDate}>
+          {item.createdAt ? format(parseISO(item.createdAt), "dd/MM/yyyy") : ""}
+        </Text>
 
         <View style={styles.badgesContainer}>
           {/* Hiển thị badge cho ca làm việc liên kết */}
@@ -300,7 +342,9 @@ export default function Notes() {
             item.associatedShiftIds.length > 0 &&
             item.associatedShiftIds.map((shiftId) => (
               <View key={shiftId} style={styles.shiftBadge}>
-                <Text style={styles.shiftText}>{getShiftNameById(shiftId)}</Text>
+                <Text style={styles.shiftText}>
+                  {getShiftNameById(shiftId)}
+                </Text>
               </View>
             ))}
 
@@ -313,13 +357,16 @@ export default function Notes() {
         </View>
       </View>
     </View>
-  )
+  );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{t("notes")}</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() => setShowAddNote(true)}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => setShowAddNote(true)}
+        >
           <Ionicons name="add" size={16} color="white" />
           <Text style={styles.addButtonText}>{t("addNote")}</Text>
         </TouchableOpacity>
@@ -331,19 +378,30 @@ export default function Notes() {
         </View>
       ) : (
         <>
-          <FlatList data={notes} renderItem={renderNoteItem} keyExtractor={(item) => item.id} scrollEnabled={false} />
+          <FlatList
+            data={notes}
+            renderItem={renderNoteItem}
+            keyExtractor={(item) => item.id}
+            scrollEnabled={false}
+          />
 
           {/* Nút "Xem thêm" nếu có nhiều ghi chú */}
           {notes.length === maxNotesToShow && (
-            <TouchableOpacity style={styles.showMoreButton} onPress={() => setMaxNotesToShow((prev) => prev + 3)}>
+            <TouchableOpacity
+              style={styles.showMoreButton}
+              onPress={() => setMaxNotesToShow((prev) => prev + 3)}
+            >
               <Text style={styles.showMoreText}>{t("showMore")}</Text>
             </TouchableOpacity>
           )}
         </>
       )}
 
-      <AddNoteModal visible={showAddNote} onClose={handleCloseModal} editNote={editingNote} />
+      <AddNoteModal
+        visible={showAddNote}
+        onClose={handleCloseModal}
+        editNote={editingNote}
+      />
     </View>
-  )
+  );
 }
-

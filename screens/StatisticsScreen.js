@@ -1,68 +1,82 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native"
-import { useNavigation } from "@react-navigation/native"
-import { Ionicons } from "@expo/vector-icons"
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, isSameDay, differenceInMinutes } from "date-fns"
-import { useTheme } from "../contexts/ThemeContext"
-import { useI18n } from "../contexts/I18nContext"
-import { getWorkLogs } from "../utils/database"
+import { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  parseISO,
+  isSameDay,
+  differenceInMinutes,
+} from "date-fns";
+import { useTheme } from "../contexts/ThemeContext";
+import { useI18n } from "../contexts/I18nContext";
+import { getWorkLogs } from "../utils/database";
 
 export default function StatisticsScreen() {
-  const navigation = useNavigation()
-  const { theme } = useTheme()
-  const { t } = useI18n()
+  const navigation = useNavigation();
+  const { theme } = useTheme();
+  const { t } = useI18n();
 
-  const [selectedMonth, setSelectedMonth] = useState(new Date())
-  const [workLogs, setWorkLogs] = useState([])
-  const [monthlyStats, setMonthlyStats] = useState([])
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [workLogs, setWorkLogs] = useState([]);
+  const [monthlyStats, setMonthlyStats] = useState([]);
 
   useEffect(() => {
-    loadWorkLogs()
-  }, [selectedMonth])
+    loadWorkLogs();
+  }, [selectedMonth, loadWorkLogs]);
 
   const loadWorkLogs = async () => {
     try {
-      const start = startOfMonth(selectedMonth)
-      const end = endOfMonth(selectedMonth)
+      const start = startOfMonth(selectedMonth);
+      const end = endOfMonth(selectedMonth);
 
-      const logs = await getWorkLogs(start, end)
-      setWorkLogs(logs)
+      const logs = await getWorkLogs(start, end);
+      setWorkLogs(logs);
 
       // Process logs to generate statistics
-      generateMonthlyStats(logs, start, end)
+      generateMonthlyStats(logs, start, end);
     } catch (error) {
-      console.error("Failed to load work logs:", error)
+      console.error("Failed to load work logs:", error);
     }
-  }
+  };
 
   const generateMonthlyStats = (logs, start, end) => {
-    const daysInMonth = eachDayOfInterval({ start, end })
+    const daysInMonth = eachDayOfInterval({ start, end });
 
     const stats = daysInMonth.map((day) => {
       // Find logs for this day
       const dayLogs = logs.filter((log) => {
-        const logDate = parseISO(log.timestamp)
-        return isSameDay(logDate, day)
-      })
+        const logDate = parseISO(log.timestamp);
+        return isSameDay(logDate, day);
+      });
 
       // Calculate work hours
-      let workMinutes = 0
-      let status = "unknown"
+      let workMinutes = 0;
+      let status = "unknown";
 
-      const clockInLog = dayLogs.find((log) => log.action === "clockIn")
-      const clockOutLog = dayLogs.find((log) => log.action === "clockOut")
+      const clockInLog = dayLogs.find((log) => log.action === "clockIn");
+      const clockOutLog = dayLogs.find((log) => log.action === "clockOut");
 
       if (clockInLog && clockOutLog) {
-        const clockInTime = parseISO(clockInLog.timestamp)
-        const clockOutTime = parseISO(clockOutLog.timestamp)
-        workMinutes = differenceInMinutes(clockOutTime, clockInTime)
-        status = "complete"
+        const clockInTime = parseISO(clockInLog.timestamp);
+        const clockOutTime = parseISO(clockOutLog.timestamp);
+        workMinutes = differenceInMinutes(clockOutTime, clockInTime);
+        status = "complete";
       } else if (clockInLog) {
-        status = "working"
+        status = "working";
       } else if (dayLogs.some((log) => log.action === "goToWork")) {
-        status = "going"
+        status = "going";
       }
 
       return {
@@ -72,36 +86,36 @@ export default function StatisticsScreen() {
         workHours: Math.floor(workMinutes / 60),
         workMinutesRemainder: workMinutes % 60,
         status,
-      }
-    })
+      };
+    });
 
-    setMonthlyStats(stats)
-  }
+    setMonthlyStats(stats);
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
       case "complete":
-        return theme.colors.success
+        return theme.colors.success;
       case "working":
-        return theme.colors.warning
+        return theme.colors.warning;
       case "going":
-        return theme.colors.info
+        return theme.colors.info;
       default:
-        return theme.colors.border
+        return theme.colors.border;
     }
-  }
+  };
 
   const previousMonth = () => {
-    const prevMonth = new Date(selectedMonth)
-    prevMonth.setMonth(prevMonth.getMonth() - 1)
-    setSelectedMonth(prevMonth)
-  }
+    const prevMonth = new Date(selectedMonth);
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    setSelectedMonth(prevMonth);
+  };
 
   const nextMonth = () => {
-    const nextMonth = new Date(selectedMonth)
-    nextMonth.setMonth(nextMonth.getMonth() + 1)
-    setSelectedMonth(nextMonth)
-  }
+    const nextMonth = new Date(selectedMonth);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    setSelectedMonth(nextMonth);
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -211,22 +225,32 @@ export default function StatisticsScreen() {
       color: theme.colors.text,
       fontWeight: "bold",
     },
-  })
+  });
 
   // Calculate total work hours for the month
-  const totalWorkMinutes = monthlyStats.reduce((total, day) => total + day.workMinutes, 0)
-  const totalWorkHours = Math.floor(totalWorkMinutes / 60)
-  const totalWorkMinutesRemainder = totalWorkMinutes % 60
+  const totalWorkMinutes = monthlyStats.reduce(
+    (total, day) => total + day.workMinutes,
+    0
+  );
+  const totalWorkHours = Math.floor(totalWorkMinutes / 60);
+  const totalWorkMinutesRemainder = totalWorkMinutes % 60;
 
   // Count days by status
-  const completeDays = monthlyStats.filter((day) => day.status === "complete").length
-  const workingDays = monthlyStats.filter((day) => day.status === "working").length
-  const goingDays = monthlyStats.filter((day) => day.status === "going").length
+  const completeDays = monthlyStats.filter(
+    (day) => day.status === "complete"
+  ).length;
+  const workingDays = monthlyStats.filter(
+    (day) => day.status === "working"
+  ).length;
+  const goingDays = monthlyStats.filter((day) => day.status === "going").length;
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <Text style={styles.title}>{t("statistics")}</Text>
@@ -234,31 +258,60 @@ export default function StatisticsScreen() {
 
       <View style={styles.monthSelector}>
         <TouchableOpacity onPress={previousMonth}>
-          <Ionicons name="chevron-back" size={24} color={theme.colors.primary} />
+          <Ionicons
+            name="chevron-back"
+            size={24}
+            color={theme.colors.primary}
+          />
         </TouchableOpacity>
-        <Text style={styles.monthText}>{format(selectedMonth, "MMMM yyyy")}</Text>
+        <Text style={styles.monthText}>
+          {format(selectedMonth, "MMMM yyyy")}
+        </Text>
         <TouchableOpacity onPress={nextMonth}>
-          <Ionicons name="chevron-forward" size={24} color={theme.colors.primary} />
+          <Ionicons
+            name="chevron-forward"
+            size={24}
+            color={theme.colors.primary}
+          />
         </TouchableOpacity>
       </View>
 
       <ScrollView>
         <View style={styles.tableContainer}>
           <View style={styles.tableHeader}>
-            <Text style={[styles.headerCell, styles.dateCell]}>{t("date")}</Text>
+            <Text style={[styles.headerCell, styles.dateCell]}>
+              {t("date")}
+            </Text>
             <Text style={[styles.headerCell, styles.dayCell]}>{t("day")}</Text>
-            <Text style={[styles.headerCell, styles.hoursCell]}>{t("regularHours")}</Text>
+            <Text style={[styles.headerCell, styles.hoursCell]}>
+              {t("regularHours")}
+            </Text>
           </View>
 
           {monthlyStats.map((day, index) => (
-            <View key={index} style={[styles.tableRow, index === monthlyStats.length - 1 && styles.lastRow]}>
-              <View style={[styles.cell, styles.dateCell, styles.dateWithStatus]}>
-                <View style={[styles.statusIndicator, { backgroundColor: getStatusColor(day.status) }]} />
+            <View
+              key={index}
+              style={[
+                styles.tableRow,
+                index === monthlyStats.length - 1 && styles.lastRow,
+              ]}
+            >
+              <View
+                style={[styles.cell, styles.dateCell, styles.dateWithStatus]}
+              >
+                <View
+                  style={[
+                    styles.statusIndicator,
+                    { backgroundColor: getStatusColor(day.status) },
+                  ]}
+                />
                 <Text>{format(day.date, "dd/MM")}</Text>
               </View>
               <Text style={[styles.cell, styles.dayCell]}>{day.dayOfWeek}</Text>
               <Text style={[styles.cell, styles.hoursCell]}>
-                {day.status === "complete" ? `${day.workHours}h ${day.workMinutesRemainder}m` : "-"}
+                {day.status === "complete"
+                  ? `${day.workHours}h ${day.workMinutesRemainder}m`
+                  : "-"}
               </Text>
             </View>
           ))}
@@ -297,6 +350,5 @@ export default function StatisticsScreen() {
         </View>
       </ScrollView>
     </View>
-  )
+  );
 }
-

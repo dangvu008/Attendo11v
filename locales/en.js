@@ -54,7 +54,8 @@ export const en = {
   vibration: "Vibration",
   vibrationDescription: "Vibrate when notifications arrive",
   multiActionButton: "Multi-Action Button",
-  multiActionButtonDescription: 'Show all check-in/out actions instead of just "Go to Work"',
+  multiActionButtonDescription:
+    'Show all check-in/out actions instead of just "Go to Work"',
 
   // Shift Management
   addNewShift: "Add New Shift",
@@ -80,7 +81,8 @@ export const en = {
   nameInvalidChars: "Shift name contains invalid characters",
   nameAlreadyExists: "This shift name already exists",
   startBeforeEnd: "Start time must be before end time",
-  departureBeforeStart: "Departure time must be at least 5 minutes before start time",
+  departureBeforeStart:
+    "Departure time must be at least 5 minutes before start time",
   startTimeBeforeOfficeEnd: "Start time must be before office end time",
   endTimeAfterOfficeEnd: "End time must be after or equal to office end time",
   minWorkingHours: "Working time must be at least 2 hours",
@@ -170,5 +172,4 @@ export const en = {
   noShiftSelected: "No shift selected",
   selectedShiftsCount: "{{count}} shifts selected",
   noShift: "No shift (use selected days)",
-}
-
+};

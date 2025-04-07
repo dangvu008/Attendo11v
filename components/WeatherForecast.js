@@ -1,190 +1,212 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { View, Text, StyleSheet, Image, ActivityIndicator, TouchableOpacity, Alert } from "react-native"
-import { Feather } from "@expo/vector-icons"
-import * as Location from "expo-location"
-import { useTheme } from "../contexts/ThemeContext"
-import { useI18n } from "../contexts/I18nContext"
-import { useShift } from "../contexts/ShiftContext"
-import { getWeatherSettings, saveWeatherSettings } from "../utils/database"
-import { fetchWeatherData, getWeatherIcon } from "../utils/weatherService"
+import { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  ActivityIndicator,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
+import * as Location from "expo-location";
+import { useTheme } from "../contexts/ThemeContext";
+import { useI18n } from "../contexts/I18nContext";
+import { useShift } from "../contexts/ShiftContext";
+import { getWeatherSettings, saveWeatherSettings } from "../utils/database";
+import { fetchWeatherData, getWeatherIcon } from "../utils/weatherService";
 
 export default function WeatherForecast() {
-  const { theme } = useTheme()
-  const { t } = useI18n()
-  const { currentShift } = useShift()
+  const { theme } = useTheme();
+  const { t } = useI18n();
+  const { currentShift } = useShift();
 
-  const [weatherData, setWeatherData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [showAlert, setShowAlert] = useState(false)
-  const [alertConditions, setAlertConditions] = useState([])
-  const [showSettings, setShowSettings] = useState(false)
+  const [weatherData, setWeatherData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConditions, setAlertConditions] = useState([]);
+  const [showSettings, setShowSettings] = useState(false);
   const [alertSettings, setAlertSettings] = useState({
     enabled: true,
     alertRain: true,
     alertCold: true,
     alertHeat: true,
     alertStorm: true,
-  })
-  const [location, setLocation] = useState(null)
+  });
+  const [location, setLocation] = useState(null);
 
   useEffect(() => {
     // Lấy vị trí và dữ liệu thời tiết khi component mount
-    initWeatherData()
+    initWeatherData();
 
     // Lấy cài đặt cảnh báo thời tiết
-    loadAlertSettings()
+    loadAlertSettings();
 
     // Thiết lập cập nhật định kỳ (30 phút)
-    const refreshInterval = setInterval(
-      () => {
-        refreshWeatherData()
-      },
-      30 * 60 * 1000,
-    )
+    const refreshInterval = setInterval(() => {
+      refreshWeatherData();
+    }, 30 * 60 * 1000);
 
-    return () => clearInterval(refreshInterval)
-  }, [])
+    return () => clearInterval(refreshInterval);
+  }, [initWeatherData, refreshWeatherData]);
 
   // Kiểm tra điều kiện thời tiết cực đoan khi dữ liệu thời tiết hoặc ca làm việc thay đổi
   useEffect(() => {
     if (weatherData && alertSettings.enabled && currentShift) {
-      checkExtremeWeather()
+      checkExtremeWeather();
     }
-  }, [weatherData, currentShift])
+  }, [weatherData, currentShift, alertSettings.enabled, checkExtremeWeather]);
 
   const initWeatherData = async () => {
     try {
       // Kiểm tra quyền truy cập vị trí
-      const { status } = await Location.requestForegroundPermissionsAsync()
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        setError(t("locationPermissionDenied"))
-        setLoading(false)
-        return
+        setError(t("locationPermissionDenied"));
+        setLoading(false);
+        return;
       }
 
       // Lấy vị trí hiện tại
-      const location = await Location.getCurrentPositionAsync({})
-      setLocation(location)
+      const location = await Location.getCurrentPositionAsync({});
+      setLocation(location);
 
       // Lấy dữ liệu thời tiết
-      await loadWeatherData(location)
+      await loadWeatherData(location);
     } catch (error) {
-      console.error("Failed to initialize weather data:", error)
-      setError(t("weatherInitError"))
-      setLoading(false)
+      console.error("Failed to initialize weather data:", error);
+      setError(t("weatherInitError"));
+      setLoading(false);
     }
-  }
+  };
 
   const loadAlertSettings = async () => {
     try {
-      const settings = await getWeatherSettings()
+      const settings = await getWeatherSettings();
       if (settings) {
-        setAlertSettings(settings)
+        setAlertSettings(settings);
       }
     } catch (error) {
-      console.error("Failed to load weather settings:", error)
+      console.error("Failed to load weather settings:", error);
     }
-  }
+  };
 
   const loadWeatherData = async (locationData) => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
-      const data = await fetchWeatherData(locationData?.coords.latitude, locationData?.coords.longitude)
-      setWeatherData(data)
+      const data = await fetchWeatherData(
+        locationData?.coords.latitude,
+        locationData?.coords.longitude
+      );
+      setWeatherData(data);
     } catch (error) {
-      console.error("Failed to load weather data:", error)
-      setError(t("weatherLoadError"))
+      console.error("Failed to load weather data:", error);
+      setError(t("weatherLoadError"));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const refreshWeatherData = async () => {
     if (location) {
-      await loadWeatherData(location)
+      await loadWeatherData(location);
     } else {
-      await initWeatherData()
+      await initWeatherData();
     }
-  }
+  };
 
   const checkExtremeWeather = () => {
-    if (!weatherData || !currentShift) return
+    if (!weatherData || !currentShift) return;
 
-    const now = new Date()
-    const departureTime = parseTimeString(currentShift.departureTime)
-    const endTime = parseTimeString(currentShift.endTime)
+    const now = new Date();
+    const departureTime = parseTimeString(currentShift.departureTime);
+    const endTime = parseTimeString(currentShift.endTime);
 
     // Kiểm tra nếu đang trong khoảng 1 giờ trước giờ đi làm hoặc tan làm
-    const isNearDeparture = isWithinHour(now, departureTime)
-    const isNearEndTime = isWithinHour(now, endTime)
+    const isNearDeparture = isWithinHour(now, departureTime);
+    const isNearEndTime = isWithinHour(now, endTime);
 
-    if (!isNearDeparture && !isNearEndTime) return
+    if (!isNearDeparture && !isNearEndTime) return;
 
     // Kiểm tra các điều kiện cực đoan
-    const extremeConditions = []
+    const extremeConditions = [];
 
     // Kiểm tra mưa to
     if (
       alertSettings.alertRain &&
-      weatherData.some((item) => item.condition.includes("rain") && item.intensity === "heavy")
+      weatherData.some(
+        (item) => item.condition.includes("rain") && item.intensity === "heavy"
+      )
     ) {
-      extremeConditions.push(t("heavyRain"))
+      extremeConditions.push(t("heavyRain"));
     }
 
     // Kiểm tra thời tiết lạnh
-    if (alertSettings.alertCold && weatherData.some((item) => item.temperature < 10)) {
-      extremeConditions.push(t("coldWeather"))
+    if (
+      alertSettings.alertCold &&
+      weatherData.some((item) => item.temperature < 10)
+    ) {
+      extremeConditions.push(t("coldWeather"));
     }
 
     // Kiểm tra thời tiết nóng
-    if (alertSettings.alertHeat && weatherData.some((item) => item.temperature > 35)) {
-      extremeConditions.push(t("hotWeather"))
+    if (
+      alertSettings.alertHeat &&
+      weatherData.some((item) => item.temperature > 35)
+    ) {
+      extremeConditions.push(t("hotWeather"));
     }
 
     // Kiểm tra bão
     if (
       alertSettings.alertStorm &&
-      weatherData.some((item) => item.condition.includes("storm") || item.condition.includes("thunder"))
+      weatherData.some(
+        (item) =>
+          item.condition.includes("storm") || item.condition.includes("thunder")
+      )
     ) {
-      extremeConditions.push(t("stormWarning"))
+      extremeConditions.push(t("stormWarning"));
     }
 
     if (extremeConditions.length > 0) {
-      setAlertConditions(extremeConditions)
-      setShowAlert(true)
+      setAlertConditions(extremeConditions);
+      setShowAlert(true);
     } else {
-      setShowAlert(false)
+      setShowAlert(false);
     }
-  }
+  };
 
   const parseTimeString = (timeString) => {
-    const [hours, minutes] = timeString.split(":").map(Number)
-    const date = new Date()
-    date.setHours(hours, minutes, 0, 0)
-    return date
-  }
+    const [hours, minutes] = timeString.split(":").map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  };
 
   const isWithinHour = (currentTime, targetTime) => {
-    const diff = Math.abs(currentTime - targetTime)
-    return diff <= 60 * 60 * 1000 // 1 giờ tính bằng mili giây
-  }
+    const diff = Math.abs(currentTime - targetTime);
+    return diff <= 60 * 60 * 1000; // 1 giờ tính bằng mili giây
+  };
 
   const toggleAlertSetting = async (setting) => {
-    const newSettings = { ...alertSettings, [setting]: !alertSettings[setting] }
-    setAlertSettings(newSettings)
+    const newSettings = {
+      ...alertSettings,
+      [setting]: !alertSettings[setting],
+    };
+    setAlertSettings(newSettings);
 
     try {
-      await saveWeatherSettings(newSettings)
+      await saveWeatherSettings(newSettings);
     } catch (error) {
-      console.error("Failed to save weather settings:", error)
-      Alert.alert(t("error"), t("failedToSaveSettings"))
+      console.error("Failed to save weather settings:", error);
+      Alert.alert(t("error"), t("failedToSaveSettings"));
     }
-  }
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -344,10 +366,10 @@ export default function WeatherForecast() {
       fontSize: 14,
       color: theme.colors.text,
     },
-  })
+  });
 
   const renderWeatherAlert = () => {
-    if (!showAlert || alertConditions.length === 0) return null
+    if (!showAlert || alertConditions.length === 0) return null;
 
     return (
       <View style={styles.alertContainer}>
@@ -356,15 +378,15 @@ export default function WeatherForecast() {
           {alertConditions.join(", ")}. {t("prepareAccordingly")}
         </Text>
       </View>
-    )
-  }
+    );
+  };
 
   if (loading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
-    )
+    );
   }
 
   if (error) {
@@ -375,14 +397,17 @@ export default function WeatherForecast() {
           <Feather name="refresh-cw" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
       </View>
-    )
+    );
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{t("weatherForecast")}</Text>
-        <TouchableOpacity style={styles.refreshButton} onPress={refreshWeatherData}>
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={refreshWeatherData}
+        >
           <Feather name="refresh-cw" size={20} color={theme.colors.primary} />
         </TouchableOpacity>
       </View>
@@ -393,10 +418,17 @@ export default function WeatherForecast() {
             <View style={styles.currentWeather}>
               <Text style={styles.currentLabel}>{t("currentWeather")}</Text>
               <View style={styles.currentDetails}>
-                <Image source={getWeatherIcon(weatherData[0].condition)} style={styles.currentIcon} />
+                <Image
+                  source={getWeatherIcon(weatherData[0].condition)}
+                  style={styles.currentIcon}
+                />
                 <View style={styles.currentInfo}>
-                  <Text style={styles.currentTemp}>{weatherData[0].temperature}°C</Text>
-                  <Text style={styles.currentCondition}>{t(weatherData[0].condition)}</Text>
+                  <Text style={styles.currentTemp}>
+                    {weatherData[0].temperature}°C
+                  </Text>
+                  <Text style={styles.currentCondition}>
+                    {t(weatherData[0].condition)}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -408,7 +440,10 @@ export default function WeatherForecast() {
               {weatherData.map((item, index) => (
                 <View key={index} style={styles.hourlyForecast}>
                   <Text style={styles.time}>{item.time}</Text>
-                  <Image source={getWeatherIcon(item.condition)} style={styles.weatherIcon} />
+                  <Image
+                    source={getWeatherIcon(item.condition)}
+                    style={styles.weatherIcon}
+                  />
                   <Text style={styles.temperature}>{item.temperature}°C</Text>
                   <Text style={styles.condition}>{t(item.condition)}</Text>
                 </View>
@@ -425,8 +460,13 @@ export default function WeatherForecast() {
 
       {renderWeatherAlert()}
 
-      <TouchableOpacity style={styles.settingsButton} onPress={() => setShowSettings(!showSettings)}>
-        <Text style={styles.settingsText}>{showSettings ? t("hideSettings") : t("showSettings")}</Text>
+      <TouchableOpacity
+        style={styles.settingsButton}
+        onPress={() => setShowSettings(!showSettings)}
+      >
+        <Text style={styles.settingsText}>
+          {showSettings ? t("hideSettings") : t("showSettings")}
+        </Text>
       </TouchableOpacity>
 
       {showSettings && (
@@ -488,6 +528,5 @@ export default function WeatherForecast() {
         </View>
       )}
     </View>
-  )
+  );
 }
-

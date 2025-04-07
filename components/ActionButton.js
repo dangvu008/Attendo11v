@@ -1,94 +1,102 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Alert } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { useTheme } from "../contexts/ThemeContext"
-import { useI18n } from "../contexts/I18nContext"
-import { useWorkStatus } from "../contexts/WorkStatusContext"
-import { useShift } from "../contexts/ShiftContext"
-import { cancelNotificationByType } from "../utils/notificationService"
-import { format } from "date-fns"
-import AsyncStorage from "@react-native-async-storage/async-storage"
+import { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Easing,
+  Alert,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../contexts/ThemeContext";
+import { useI18n } from "../contexts/I18nContext";
+import { useWorkStatus } from "../contexts/WorkStatusContext";
+import { useShift } from "../contexts/ShiftContext";
+import { cancelNotificationByType } from "../utils/notificationService";
+import { format } from "date-fns";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ActionButton() {
-  const { theme } = useTheme()
-  const { t } = useI18n()
-  const { workStatus, updateWorkStatus, resetWorkStatus } = useWorkStatus()
-  const { currentShift } = useShift()
-  const [expanded, setExpanded] = useState(false)
-  const [animation] = useState(new Animated.Value(0))
-  const [isMultiAction, setIsMultiAction] = useState(true)
-  const actionButtonRef = useRef(null)
+  const { theme } = useTheme();
+  const { t } = useI18n();
+  const { workStatus, updateWorkStatus, resetWorkStatus } = useWorkStatus();
+  const { currentShift } = useShift();
+  const [expanded, setExpanded] = useState(false);
+  const [animation] = useState(new Animated.Value(0));
+  const [isMultiAction, setIsMultiAction] = useState(true);
+  const actionButtonRef = useRef(null);
 
   // Lấy cài đặt chế độ nút từ AsyncStorage
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const settings = await AsyncStorage.getItem("attendo_user_settings")
+        const settings = await AsyncStorage.getItem("attendo_user_settings");
         if (settings) {
-          const parsedSettings = JSON.parse(settings)
-          setIsMultiAction(!parsedSettings.onlyGoWorkMode)
+          const parsedSettings = JSON.parse(settings);
+          setIsMultiAction(!parsedSettings.onlyGoWorkMode);
         }
       } catch (error) {
-        console.error("Failed to load button mode settings:", error)
+        console.error("Failed to load button mode settings:", error);
       }
-    }
+    };
 
-    loadSettings()
-  }, [])
+    loadSettings();
+  }, []);
 
   const toggleExpand = () => {
     if (workStatus.status === "idle" || !isMultiAction) {
       // Nếu idle hoặc chế độ chỉ Đi Làm, thực hiện hành động Đi Làm ngay
-      handleActionPress("go_work")
+      handleActionPress("go_work");
     } else {
       // Mở rộng hiển thị các tùy chọn
-      setExpanded(!expanded)
+      setExpanded(!expanded);
       Animated.timing(animation, {
         toValue: expanded ? 0 : 1,
         duration: 300,
         easing: Easing.bezier(0.4, 0.0, 0.2, 1),
         useNativeDriver: false,
-      }).start()
+      }).start();
     }
-  }
+  };
 
   // Trong hàm handleActionPress, thêm kiểm tra chế độ nút
   const handleActionPress = async (action) => {
-    const timestamp = new Date()
-    const today = format(timestamp, "yyyy-MM-dd")
+    const timestamp = new Date();
+    const today = format(timestamp, "yyyy-MM-dd");
 
     try {
       // Hủy thông báo tương ứng
-      await cancelNotificationByType(action, today)
+      await cancelNotificationByType(action, today);
 
       // Kiểm tra xem có phải chế độ chỉ có nút "Đi làm" không
       if (!isMultiAction && action === "go_work") {
         // Nếu là chế độ chỉ có nút "Đi làm", thì cập nhật trạng thái thành "complete" luôn
-        await updateWorkStatus("complete", timestamp)
+        await updateWorkStatus("complete", timestamp);
       } else {
         // Cập nhật trạng thái bình thường
-        await updateWorkStatus(action, timestamp)
+        await updateWorkStatus(action, timestamp);
       }
 
       // Thu gọn menu nếu đang mở rộng
       if (expanded) {
-        setExpanded(false)
-        animation.setValue(0)
+        setExpanded(false);
+        animation.setValue(0);
       }
 
       // Hiệu ứng phản hồi
       if (actionButtonRef.current) {
         actionButtonRef.current.measure((x, y, width, height, pageX, pageY) => {
           // Tạo hiệu ứng ripple hoặc flash
-        })
+        });
       }
     } catch (error) {
-      console.error("Failed to process action:", error)
-      Alert.alert(t("error"), t("failedToSaveWorkLog"))
+      console.error("Failed to process action:", error);
+      Alert.alert(t("error"), t("failedToSaveWorkLog"));
     }
-  }
+  };
 
   const handleResetStatus = () => {
     Alert.alert(t("confirm"), t("resetStatusConfirmation"), [
@@ -99,78 +107,78 @@ export default function ActionButton() {
       {
         text: t("reset"),
         onPress: async () => {
-          await resetWorkStatus()
+          await resetWorkStatus();
         },
       },
-    ])
-  }
+    ]);
+  };
 
   const getButtonColor = () => {
     switch (workStatus.status) {
       case "go_work":
-        return theme.colors.warning
+        return theme.colors.warning;
       case "check_in":
-        return theme.colors.success
+        return theme.colors.success;
       case "check_out":
       case "punch":
-        return theme.colors.info
+        return theme.colors.info;
       case "complete":
-        return theme.colors.primary
+        return theme.colors.primary;
       default:
-        return theme.colors.primary
+        return theme.colors.primary;
     }
-  }
+  };
 
   const getButtonText = () => {
     switch (workStatus.status) {
       case "go_work":
-        return t("clockIn")
+        return t("clockIn");
       case "check_in":
-        return t("clockOut")
+        return t("clockOut");
       case "check_out":
       case "punch":
-        return t("complete")
+        return t("complete");
       case "complete":
-        return t("completed")
+        return t("completed");
       default:
-        return t("goToWork")
+        return t("goToWork");
     }
-  }
+  };
 
   const getButtonIcon = () => {
     switch (workStatus.status) {
       case "go_work":
-        return "enter-outline"
+        return "enter-outline";
       case "check_in":
-        return "exit-outline"
+        return "exit-outline";
       case "check_out":
       case "punch":
-        return "checkmark-circle-outline"
+        return "checkmark-circle-outline";
       case "complete":
-        return "checkmark-done-outline"
+        return "checkmark-done-outline";
       default:
-        return "briefcase-outline"
+        return "briefcase-outline";
     }
-  }
+  };
 
   const getNextAction = () => {
     switch (workStatus.status) {
       case "go_work":
-        return "check_in"
+        return "check_in";
       case "check_in":
-        return currentShift?.showPunch ? "punch" : "check_out"
+        return currentShift?.showPunch ? "punch" : "check_out";
       case "punch":
-        return "check_out"
+        return "check_out";
       case "check_out":
-        return "complete"
+        return "complete";
       default:
-        return "go_work"
+        return "go_work";
     }
-  }
+  };
 
   const isButtonDisabled = () => {
-    return workStatus.status === "complete"
-  }
+    return workStatus.status === "complete";
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -280,12 +288,6 @@ export default function ActionButton() {
       fontWeight: "bold",
       marginLeft: 8,
     },
-    statusText: {
-      marginTop: 8,
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-      textAlign: "center",
-    },
     statusHistory: {
       marginTop: 16,
       alignItems: "center",
@@ -295,7 +297,12 @@ export default function ActionButton() {
       color: theme.colors.textSecondary,
       marginBottom: 4,
     },
-  })
+    actionButtonText: {
+      fontSize: 16,
+      fontWeight: "bold",
+      marginLeft: 8,
+    },
+  });
 
   // Tính toán vị trí cho các nút tùy chọn
   const goToWorkPosition = {
@@ -317,7 +324,7 @@ export default function ActionButton() {
         }),
       },
     ],
-  }
+  };
 
   const checkInPosition = {
     top: animation.interpolate({
@@ -338,7 +345,7 @@ export default function ActionButton() {
         }),
       },
     ],
-  }
+  };
 
   const checkOutPosition = {
     top: animation.interpolate({
@@ -359,7 +366,7 @@ export default function ActionButton() {
         }),
       },
     ],
-  }
+  };
 
   const punchPosition = {
     top: animation.interpolate({
@@ -380,7 +387,7 @@ export default function ActionButton() {
         }),
       },
     ],
-  }
+  };
 
   const resetPosition = {
     top: animation.interpolate({
@@ -401,7 +408,7 @@ export default function ActionButton() {
         }),
       },
     ],
-  }
+  };
 
   // Vị trí cho text
   const goToWorkTextPosition = {
@@ -424,7 +431,7 @@ export default function ActionButton() {
       },
     ],
     opacity: animation,
-  }
+  };
 
   const checkInTextPosition = {
     top: animation.interpolate({
@@ -446,7 +453,7 @@ export default function ActionButton() {
       },
     ],
     opacity: animation,
-  }
+  };
 
   const checkOutTextPosition = {
     top: animation.interpolate({
@@ -468,7 +475,7 @@ export default function ActionButton() {
       },
     ],
     opacity: animation,
-  }
+  };
 
   const punchTextPosition = {
     top: animation.interpolate({
@@ -490,7 +497,7 @@ export default function ActionButton() {
       },
     ],
     opacity: animation,
-  }
+  };
 
   const resetTextPosition = {
     top: animation.interpolate({
@@ -512,7 +519,7 @@ export default function ActionButton() {
       },
     ],
     opacity: animation,
-  }
+  };
 
   return (
     <View style={styles.container}>
@@ -522,61 +529,116 @@ export default function ActionButton() {
           {/* Nút Đi Làm */}
           <Animated.View style={[styles.optionButton, goToWorkPosition]}>
             <TouchableOpacity
-              style={{ width: "100%", height: "100%", justifyContent: "center", alignItems: "center" }}
+              style={{
+                width: "100%",
+                height: "100%",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
               onPress={() => handleActionPress("go_work")}
             >
-              <Ionicons name="briefcase-outline" size={24} color={theme.colors.primary} />
+              <Ionicons
+                name="briefcase-outline"
+                size={24}
+                color={theme.colors.primary}
+              />
             </TouchableOpacity>
           </Animated.View>
-          <Animated.Text style={[styles.optionText, goToWorkTextPosition]}>{t("goToWork")}</Animated.Text>
+          <Animated.Text style={[styles.optionText, goToWorkTextPosition]}>
+            {t("goToWork")}
+          </Animated.Text>
 
           {/* Nút Chấm Công Vào */}
           <Animated.View style={[styles.optionButton, checkInPosition]}>
             <TouchableOpacity
-              style={{ width: "100%", height: "100%", justifyContent: "center", alignItems: "center" }}
+              style={{
+                width: "100%",
+                height: "100%",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
               onPress={() => handleActionPress("check_in")}
             >
-              <Ionicons name="enter-outline" size={24} color={theme.colors.warning} />
+              <Ionicons
+                name="enter-outline"
+                size={24}
+                color={theme.colors.warning}
+              />
             </TouchableOpacity>
           </Animated.View>
-          <Animated.Text style={[styles.optionText, checkInTextPosition]}>{t("clockIn")}</Animated.Text>
+          <Animated.Text style={[styles.optionText, checkInTextPosition]}>
+            {t("clockIn")}
+          </Animated.Text>
 
           {/* Nút Chấm Công Ra */}
           <Animated.View style={[styles.optionButton, checkOutPosition]}>
             <TouchableOpacity
-              style={{ width: "100%", height: "100%", justifyContent: "center", alignItems: "center" }}
+              style={{
+                width: "100%",
+                height: "100%",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
               onPress={() => handleActionPress("check_out")}
             >
-              <Ionicons name="exit-outline" size={24} color={theme.colors.success} />
+              <Ionicons
+                name="exit-outline"
+                size={24}
+                color={theme.colors.success}
+              />
             </TouchableOpacity>
           </Animated.View>
-          <Animated.Text style={[styles.optionText, checkOutTextPosition]}>{t("clockOut")}</Animated.Text>
+          <Animated.Text style={[styles.optionText, checkOutTextPosition]}>
+            {t("clockOut")}
+          </Animated.Text>
 
           {/* Nút Ký Công (nếu showPunch = true) */}
           {currentShift?.showPunch && (
             <>
               <Animated.View style={[styles.optionButton, punchPosition]}>
                 <TouchableOpacity
-                  style={{ width: "100%", height: "100%", justifyContent: "center", alignItems: "center" }}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
                   onPress={() => handleActionPress("punch")}
                 >
-                  <Ionicons name="create-outline" size={24} color={theme.colors.info} />
+                  <Ionicons
+                    name="create-outline"
+                    size={24}
+                    color={theme.colors.info}
+                  />
                 </TouchableOpacity>
               </Animated.View>
-              <Animated.Text style={[styles.optionText, punchTextPosition]}>{t("punch")}</Animated.Text>
+              <Animated.Text style={[styles.optionText, punchTextPosition]}>
+                {t("punch")}
+              </Animated.Text>
             </>
           )}
 
           {/* Nút Reset */}
           <Animated.View style={[styles.optionButton, resetPosition]}>
             <TouchableOpacity
-              style={{ width: "100%", height: "100%", justifyContent: "center", alignItems: "center" }}
+              style={{
+                width: "100%",
+                height: "100%",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
               onPress={handleResetStatus}
             >
-              <Ionicons name="refresh-outline" size={24} color={theme.colors.danger} />
+              <Ionicons
+                name="refresh-outline"
+                size={24}
+                color={theme.colors.danger}
+              />
             </TouchableOpacity>
           </Animated.View>
-          <Animated.Text style={[styles.optionText, resetTextPosition]}>{t("reset")}</Animated.Text>
+          <Animated.Text style={[styles.optionText, resetTextPosition]}>
+            {t("reset")}
+          </Animated.Text>
         </Animated.View>
       )}
 
@@ -584,7 +646,10 @@ export default function ActionButton() {
       <View style={styles.mainButtonContainer}>
         <TouchableOpacity
           ref={actionButtonRef}
-          style={[styles.mainButton, isButtonDisabled() && styles.disabledButton]}
+          style={[
+            styles.mainButton,
+            isButtonDisabled() && styles.disabledButton,
+          ]}
           onPress={toggleExpand}
           disabled={isButtonDisabled()}
         >
@@ -594,17 +659,29 @@ export default function ActionButton() {
       </View>
 
       {/* Nút Ký Công (hiển thị riêng khi ở trạng thái check_in và showPunch = true) */}
-      {workStatus.status === "check_in" && currentShift?.showPunch && !expanded && (
-        <TouchableOpacity style={styles.punchButton} onPress={() => handleActionPress("punch")}>
-          <Ionicons name="create-outline" size={20} color="white" />
-          <Text style={styles.punchButtonText}>{t("punch")}</Text>
-        </TouchableOpacity>
-      )}
+      {workStatus.status === "check_in" &&
+        currentShift?.showPunch &&
+        !expanded && (
+          <TouchableOpacity
+            style={styles.punchButton}
+            onPress={() => handleActionPress("punch")}
+          >
+            <Ionicons name="create-outline" size={20} color="white" />
+            <Text style={styles.punchButtonText}>{t("punch")}</Text>
+          </TouchableOpacity>
+        )}
 
       {/* Nút Reset (hiển thị khi không mở rộng và đã bấm ít nhất 1 lần) */}
       {workStatus.status !== "idle" && !expanded && (
-        <TouchableOpacity style={styles.resetButton} onPress={handleResetStatus}>
-          <Ionicons name="refresh-outline" size={16} color={theme.colors.text} />
+        <TouchableOpacity
+          style={styles.resetButton}
+          onPress={handleResetStatus}
+        >
+          <Ionicons
+            name="refresh-outline"
+            size={16}
+            color={theme.colors.text}
+          />
           <Text style={styles.resetText}>{t("reset")}</Text>
         </TouchableOpacity>
       )}
@@ -614,12 +691,14 @@ export default function ActionButton() {
         <View style={styles.statusHistory}>
           {workStatus.goToWorkTime && (
             <Text style={styles.historyItem}>
-              {t("goneToWork")} {format(new Date(workStatus.goToWorkTime), "HH:mm")}
+              {t("goneToWork")}{" "}
+              {format(new Date(workStatus.goToWorkTime), "HH:mm")}
             </Text>
           )}
           {workStatus.checkInTime && (
             <Text style={styles.historyItem}>
-              {t("clockedIn")} {format(new Date(workStatus.checkInTime), "HH:mm")}
+              {t("clockedIn")}{" "}
+              {format(new Date(workStatus.checkInTime), "HH:mm")}
             </Text>
           )}
           {workStatus.punchTime && (
@@ -629,12 +708,12 @@ export default function ActionButton() {
           )}
           {workStatus.checkOutTime && (
             <Text style={styles.historyItem}>
-              {t("clockedOut")} {format(new Date(workStatus.checkOutTime), "HH:mm")}
+              {t("clockedOut")}{" "}
+              {format(new Date(workStatus.checkOutTime), "HH:mm")}
             </Text>
           )}
         </View>
       )}
     </View>
-  )
+  );
 }
-
