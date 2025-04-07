@@ -208,9 +208,11 @@ export default function HomeScreen() {
       flexDirection: "row",
       alignItems: "center",
       backgroundColor: theme.colors.primary,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 8,
+      padding: 10,
+      borderRadius: 20,
+      width: 40,
+      height: 40,
+      justifyContent: "center",
     },
     addButtonText: {
       color: "white",
@@ -344,7 +346,6 @@ export default function HomeScreen() {
               onPress={() => setShowAddNote(true)}
             >
               <Feather name="plus" size={16} color="white" />
-              <Text style={styles.addButtonText}>{t("addNote")}</Text>
             </TouchableOpacity>
           </View>
           <Notes />

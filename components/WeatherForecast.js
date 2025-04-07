@@ -450,7 +450,7 @@ export default function WeatherForecast() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>{t("weatherForecast")}</Text>
+        <Text style={styles.title}>{t("next3Hours")}</Text>
         <TouchableOpacity
           style={styles.refreshButton}
           onPress={refreshWeatherData}
@@ -461,7 +461,8 @@ export default function WeatherForecast() {
 
       <View style={styles.weatherGrid}>
         {weatherData && weatherData.length > 0 ? (
-          weatherData.map((item, index) => (
+          // Chỉ hiển thị 3 giờ tiếp theo
+          weatherData.slice(0, 3).map((item, index) => (
             <View key={index} style={styles.weatherItem}>
               <Text style={styles.weatherTime}>{item.time}</Text>
               <Image
