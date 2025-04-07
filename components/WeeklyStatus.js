@@ -1,36 +1,54 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Alert } from "react-native"
-import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns"
-import { Ionicons } from "@expo/vector-icons"
-import { useTheme } from "../contexts/ThemeContext"
-import { useI18n } from "../contexts/I18nContext"
-import { useShift } from "../contexts/ShiftContext"
-import { getWorkLogs, getDailyWorkStatus, updateDailyWorkStatus } from "../utils/database"
-import { getStatusIcon, getStatusColor, getDisplayStatus } from "../utils/workStatusCalculator"
+import { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
+  Alert,
+} from "react-native";
+import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns";
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../contexts/ThemeContext";
+import { useI18n } from "../contexts/I18nContext";
+import { useShift } from "../contexts/ShiftContext";
+import {
+  getWorkLogs,
+  getDailyWorkStatus,
+  updateDailyWorkStatus,
+} from "../utils/database";
+import {
+  getStatusIcon,
+  getStatusColor,
+  getDisplayStatus,
+} from "../utils/workStatusCalculator";
+import { useWorkStatus } from "../contexts/WorkStatusContext";
 
 export default function WeeklyStatus() {
-  const { theme } = useTheme()
-  const { t } = useI18n()
-  const { currentShift } = useShift()
+  const { theme } = useTheme();
+  const { t } = useI18n();
+  const { currentShift } = useShift();
+  const { weeklyStatusRefreshTrigger } = useWorkStatus();
 
-  const [weekDays, setWeekDays] = useState([])
-  const [selectedDay, setSelectedDay] = useState(null)
-  const [dayDetails, setDayDetails] = useState(null)
-  const [showDetailsModal, setShowDetailsModal] = useState(false)
-  const [showStatusSelector, setShowStatusSelector] = useState(false)
-  const [workLogs, setWorkLogs] = useState({})
-  const [dailyStatuses, setDailyStatuses] = useState({})
+  const [weekDays, setWeekDays] = useState([]);
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [dayDetails, setDayDetails] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showStatusSelector, setShowStatusSelector] = useState(false);
+  const [workLogs, setWorkLogs] = useState({});
+  const [dailyStatuses, setDailyStatuses] = useState({});
 
   // Tính toán các ngày trong tuần hiện tại
   useEffect(() => {
-    const today = new Date()
-    const startDay = startOfWeek(today, { weekStartsOn: 1 }) // Bắt đầu từ thứ 2
+    const today = new Date();
+    const startDay = startOfWeek(today, { weekStartsOn: 1 }); // Bắt đầu từ thứ 2
 
-    const days = []
+    const days = [];
     for (let i = 0; i < 7; i++) {
-      const day = addDays(startDay, i)
+      const day = addDays(startDay, i);
       days.push({
         date: day,
         dayOfWeek: format(day, "EEE"),
@@ -39,52 +57,52 @@ export default function WeeklyStatus() {
         status: "unknown", // Trạng thái mặc định
         checkInTime: null,
         checkOutTime: null,
-      })
+      });
     }
 
-    setWeekDays(days)
-    loadWeekData(days)
-  }, [])
+    setWeekDays(days);
+    loadWeekData(days);
+  }, [weeklyStatusRefreshTrigger]);
 
   // Tải dữ liệu cho tuần
   const loadWeekData = async (days) => {
     try {
       // Lấy ngày đầu và cuối tuần
-      const startDate = days[0].date
-      const endDate = days[6].date
+      const startDate = days[0].date;
+      const endDate = days[6].date;
 
       // Lấy logs chấm công
-      const logs = await getWorkLogs(startDate, endDate)
-      const logsMap = {}
+      const logs = await getWorkLogs(startDate, endDate);
+      const logsMap = {};
 
       // Nhóm logs theo ngày
       logs.forEach((log) => {
-        const logDate = format(parseISO(log.timestamp), "yyyy-MM-dd")
+        const logDate = format(parseISO(log.timestamp), "yyyy-MM-dd");
         if (!logsMap[logDate]) {
-          logsMap[logDate] = []
+          logsMap[logDate] = [];
         }
-        logsMap[logDate].push(log)
-      })
+        logsMap[logDate].push(log);
+      });
 
-      setWorkLogs(logsMap)
+      setWorkLogs(logsMap);
 
       // Lấy trạng thái công hàng ngày
-      const statuses = {}
+      const statuses = {};
       for (const day of days) {
-        const dayStr = format(day.date, "yyyy-MM-dd")
-        const status = await getDailyWorkStatus(dayStr)
+        const dayStr = format(day.date, "yyyy-MM-dd");
+        const status = await getDailyWorkStatus(dayStr);
         if (status) {
-          statuses[dayStr] = status
+          statuses[dayStr] = status;
         }
       }
 
-      setDailyStatuses(statuses)
+      setDailyStatuses(statuses);
 
       // Cập nhật weekDays với dữ liệu
       const updatedDays = days.map((day) => {
-        const dayStr = format(day.date, "yyyy-MM-dd")
-        const dayStatus = statuses[dayStr]
-        const dayLogs = logsMap[dayStr] || []
+        const dayStr = format(day.date, "yyyy-MM-dd");
+        const dayStatus = statuses[dayStr];
+        const dayLogs = logsMap[dayStr] || [];
 
         return {
           ...day,
@@ -92,22 +110,22 @@ export default function WeeklyStatus() {
           checkInTime: dayStatus?.checkInTime || null,
           checkOutTime: dayStatus?.checkOutTime || null,
           logs: dayLogs,
-        }
-      })
+        };
+      });
 
-      setWeekDays(updatedDays)
+      setWeekDays(updatedDays);
     } catch (error) {
-      console.error("Failed to load week data:", error)
+      console.error("Failed to load week data:", error);
     }
-  }
+  };
 
   // Xử lý khi nhấn vào một ngày
   const handleDayPress = (day) => {
-    setSelectedDay(day)
+    setSelectedDay(day);
 
-    const dayStr = format(day.date, "yyyy-MM-dd")
-    const dayStatus = dailyStatuses[dayStr]
-    const dayLogs = workLogs[dayStr] || []
+    const dayStr = format(day.date, "yyyy-MM-dd");
+    const dayStatus = dailyStatuses[dayStr];
+    const dayLogs = workLogs[dayStr] || [];
 
     setDayDetails({
       ...day,
@@ -117,17 +135,17 @@ export default function WeeklyStatus() {
       overtime: dayStatus?.overtime || 0,
       remarks: dayStatus?.remarks || "",
       logs: dayLogs,
-    })
+    });
 
-    setShowDetailsModal(true)
-  }
+    setShowDetailsModal(true);
+  };
 
   // Cập nhật trạng thái thủ công
   const handleStatusChange = async (newStatus) => {
-    if (!selectedDay) return
+    if (!selectedDay) return;
 
     try {
-      const dayStr = format(selectedDay.date, "yyyy-MM-dd")
+      const dayStr = format(selectedDay.date, "yyyy-MM-dd");
 
       // Lấy trạng thái hiện tại
       const currentStatus = dailyStatuses[dayStr] || {
@@ -137,7 +155,7 @@ export default function WeeklyStatus() {
         totalWorkTime: 0,
         overtime: 0,
         remarks: "",
-      }
+      };
 
       // Cập nhật trạng thái mới
       const updatedStatus = {
@@ -146,15 +164,17 @@ export default function WeeklyStatus() {
         remarks:
           currentStatus.remarks +
           (currentStatus.remarks ? " " : "") +
-          `[${format(new Date(), "HH:mm")}] Cập nhật thủ công: ${t(newStatus)}.`,
-      }
+          `[${format(new Date(), "HH:mm")}] Cập nhật thủ công: ${t(
+            newStatus
+          )}.`,
+      };
 
       // Lưu vào database
-      await updateDailyWorkStatus(dayStr, updatedStatus)
+      await updateDailyWorkStatus(dayStr, updatedStatus);
 
       // Cập nhật state
-      const newDailyStatuses = { ...dailyStatuses, [dayStr]: updatedStatus }
-      setDailyStatuses(newDailyStatuses)
+      const newDailyStatuses = { ...dailyStatuses, [dayStr]: updatedStatus };
+      setDailyStatuses(newDailyStatuses);
 
       // Cập nhật weekDays
       const updatedDays = weekDays.map((day) => {
@@ -162,32 +182,46 @@ export default function WeeklyStatus() {
           return {
             ...day,
             status: getDisplayStatus(updatedStatus),
-          }
+          };
         }
-        return day
-      })
+        return day;
+      });
 
-      setWeekDays(updatedDays)
-      setShowStatusSelector(false)
-      setShowDetailsModal(false)
+      setWeekDays(updatedDays);
+      setShowStatusSelector(false);
+      setShowDetailsModal(false);
     } catch (error) {
-      console.error("Failed to update status:", error)
-      Alert.alert(t("error"), t("failedToUpdateStatus"))
+      console.error("Failed to update status:", error);
+      Alert.alert(t("error"), t("failedToUpdateStatus"));
     }
-  }
+  };
 
   // Render icon trạng thái
   const renderStatusIcon = (status, isToday) => {
-    const iconSize = 24
-    const iconColor = isToday ? theme.colors.primary : getStatusColor(status, theme)
+    const iconSize = 24;
+    const iconColor = isToday
+      ? theme.colors.primary
+      : getStatusColor(status, theme);
 
     // Nếu trạng thái là "RV" nhưng đã hoàn tất, hiển thị là "complete"
     if (status === "RV" && dayDetails?.completeTime) {
-      return <Ionicons name={getStatusIcon("complete")} size={iconSize} color={getStatusColor("complete", theme)} />
+      return (
+        <Ionicons
+          name={getStatusIcon("complete")}
+          size={iconSize}
+          color={getStatusColor("complete", theme)}
+        />
+      );
     }
 
-    return <Ionicons name={getStatusIcon(status)} size={iconSize} color={iconColor} />
-  }
+    return (
+      <Ionicons
+        name={getStatusIcon(status)}
+        size={iconSize}
+        color={iconColor}
+      />
+    );
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -403,40 +437,40 @@ export default function WeeklyStatus() {
       fontSize: 12,
       fontWeight: "bold",
     },
-  })
+  });
 
   // Render chi tiết log
   const renderLogItem = (log) => {
-    let iconName = "help-circle"
-    let iconColor = theme.colors.textSecondary
-    let logTypeText = ""
+    let iconName = "help-circle";
+    let iconColor = theme.colors.textSecondary;
+    let logTypeText = "";
 
     switch (log.type) {
       case "go_work":
-        iconName = "briefcase-outline"
-        iconColor = theme.colors.primary
-        logTypeText = t("goToWork")
-        break
+        iconName = "briefcase-outline";
+        iconColor = theme.colors.primary;
+        logTypeText = t("goToWork");
+        break;
       case "check_in":
-        iconName = "enter-outline"
-        iconColor = theme.colors.warning
-        logTypeText = t("clockIn")
-        break
+        iconName = "enter-outline";
+        iconColor = theme.colors.warning;
+        logTypeText = t("clockIn");
+        break;
       case "punch":
-        iconName = "create-outline"
-        iconColor = theme.colors.info
-        logTypeText = t("punch")
-        break
+        iconName = "create-outline";
+        iconColor = theme.colors.info;
+        logTypeText = t("punch");
+        break;
       case "check_out":
-        iconName = "exit-outline"
-        iconColor = theme.colors.success
-        logTypeText = t("clockOut")
-        break
+        iconName = "exit-outline";
+        iconColor = theme.colors.success;
+        logTypeText = t("clockOut");
+        break;
       case "complete":
-        iconName = "checkmark-done-outline"
-        iconColor = theme.colors.primary
-        logTypeText = t("completed")
-        break
+        iconName = "checkmark-done-outline";
+        iconColor = theme.colors.primary;
+        logTypeText = t("completed");
+        break;
     }
 
     return (
@@ -446,11 +480,13 @@ export default function WeeklyStatus() {
         </View>
         <View style={styles.logInfo}>
           <Text style={styles.logType}>{logTypeText}</Text>
-          <Text style={styles.logTime}>{format(parseISO(log.timestamp), "HH:mm:ss")}</Text>
+          <Text style={styles.logTime}>
+            {format(parseISO(log.timestamp), "HH:mm:ss")}
+          </Text>
         </View>
       </View>
-    )
-  }
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -461,7 +497,14 @@ export default function WeeklyStatus() {
         <View style={styles.weekRow}>
           {weekDays.map((day, index) => (
             <View key={`day-${index}`} style={styles.dayColumn}>
-              <Text style={[styles.dayName, day.isToday && { color: theme.colors.primary }]}>{day.dayOfWeek}</Text>
+              <Text
+                style={[
+                  styles.dayName,
+                  day.isToday && { color: theme.colors.primary },
+                ]}
+              >
+                {day.dayOfWeek}
+              </Text>
             </View>
           ))}
         </View>
@@ -469,8 +512,16 @@ export default function WeeklyStatus() {
         {/* Hàng hiển thị ngày */}
         <View style={styles.weekRow}>
           {weekDays.map((day, index) => (
-            <TouchableOpacity key={`date-${index}`} style={styles.dayColumn} onPress={() => handleDayPress(day)}>
-              <Text style={[styles.dayNumber, day.isToday && styles.todayNumber]}>{day.dayNumber}</Text>
+            <TouchableOpacity
+              key={`date-${index}`}
+              style={styles.dayColumn}
+              onPress={() => handleDayPress(day)}
+            >
+              <Text
+                style={[styles.dayNumber, day.isToday && styles.todayNumber]}
+              >
+                {day.dayNumber}
+              </Text>
               <View style={styles.dayStatus}>
                 {day.status === "RV" ? (
                   <View style={styles.rvBadge}>
@@ -515,15 +566,31 @@ export default function WeeklyStatus() {
               <ScrollView>
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>{dayDetails.fullDate}</Text>
-                  <TouchableOpacity style={styles.closeButton} onPress={() => setShowDetailsModal(false)}>
-                    <Ionicons name="close" size={24} color={theme.colors.text} />
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setShowDetailsModal(false)}
+                  >
+                    <Ionicons
+                      name="close"
+                      size={24}
+                      color={theme.colors.text}
+                    />
                   </TouchableOpacity>
                 </View>
 
                 {showStatusSelector ? (
                   // Bộ chọn trạng thái
                   <View style={styles.statusSelector}>
-                    {["complete", "incomplete", "RV", "leave", "sick", "holiday", "absent", "unknown"].map((status) => (
+                    {[
+                      "complete",
+                      "incomplete",
+                      "RV",
+                      "leave",
+                      "sick",
+                      "holiday",
+                      "absent",
+                      "unknown",
+                    ].map((status) => (
                       <TouchableOpacity
                         key={status}
                         style={styles.statusOption}
@@ -556,8 +623,15 @@ export default function WeeklyStatus() {
                       <Text style={styles.detailLabel}>{t("status")}</Text>
                       <View style={styles.detailValue}>
                         <Text>{t(dayDetails.status)}</Text>
-                        <TouchableOpacity style={styles.editButton} onPress={() => setShowStatusSelector(true)}>
-                          <Ionicons name="create-outline" size={18} color={theme.colors.primary} />
+                        <TouchableOpacity
+                          style={styles.editButton}
+                          onPress={() => setShowStatusSelector(true)}
+                        >
+                          <Ionicons
+                            name="create-outline"
+                            size={18}
+                            color={theme.colors.primary}
+                          />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -565,34 +639,46 @@ export default function WeeklyStatus() {
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>{t("checkIn")}</Text>
                       <Text style={styles.detailValue}>
-                        {dayDetails.checkInTime ? dayDetails.checkInTime.substring(0, 5) : "--:--"}
+                        {dayDetails.checkInTime
+                          ? dayDetails.checkInTime.substring(0, 5)
+                          : "--:--"}
                       </Text>
                     </View>
 
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>{t("checkOut")}</Text>
                       <Text style={styles.detailValue}>
-                        {dayDetails.checkOutTime ? dayDetails.checkOutTime.substring(0, 5) : "--:--"}
+                        {dayDetails.checkOutTime
+                          ? dayDetails.checkOutTime.substring(0, 5)
+                          : "--:--"}
                       </Text>
                     </View>
 
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>{t("totalWorkTime")}</Text>
+                      <Text style={styles.detailLabel}>
+                        {t("totalWorkTime")}
+                      </Text>
                       <Text style={styles.detailValue}>
-                        {dayDetails.totalWorkTime > 0 ? `${dayDetails.totalWorkTime}h` : "--"}
+                        {dayDetails.totalWorkTime > 0
+                          ? `${dayDetails.totalWorkTime}h`
+                          : "--"}
                       </Text>
                     </View>
 
                     {dayDetails.overtime > 0 && (
                       <View style={styles.detailRow}>
                         <Text style={styles.detailLabel}>{t("overtime")}</Text>
-                        <Text style={styles.detailValue}>{dayDetails.overtime}h</Text>
+                        <Text style={styles.detailValue}>
+                          {dayDetails.overtime}h
+                        </Text>
                       </View>
                     )}
 
                     {dayDetails.remarks && (
                       <View style={styles.remarksContainer}>
-                        <Text style={styles.remarksText}>{dayDetails.remarks}</Text>
+                        <Text style={styles.remarksText}>
+                          {dayDetails.remarks}
+                        </Text>
                       </View>
                     )}
 
@@ -601,7 +687,9 @@ export default function WeeklyStatus() {
                       {dayDetails.logs && dayDetails.logs.length > 0 ? (
                         dayDetails.logs.map((log) => renderLogItem(log))
                       ) : (
-                        <Text style={styles.noLogsText}>{t("noLogsForThisDay")}</Text>
+                        <Text style={styles.noLogsText}>
+                          {t("noLogsForThisDay")}
+                        </Text>
                       )}
                     </View>
 
@@ -621,6 +709,5 @@ export default function WeeklyStatus() {
         </View>
       </Modal>
     </View>
-  )
+  );
 }
-

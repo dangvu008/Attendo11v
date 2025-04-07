@@ -9,6 +9,7 @@ import {
   ScrollView,
   RefreshControl,
   Alert,
+  StatusBar,
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { Ionicons, Feather } from "@expo/vector-icons";
@@ -23,6 +24,8 @@ import Notes from "../components/Notes";
 import AddNoteModal from "../components/AddNoteModal";
 import WeatherForecast from "../components/WeatherForecast";
 import { saveWorkLog, getWorkLogs } from "../utils/database";
+import { useWeather } from "../contexts/WeatherContext";
+import WeatherAlert from "../components/WeatherAlert";
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -30,6 +33,8 @@ export default function HomeScreen() {
   const { t } = useI18n();
   const { currentShift } = useShift();
   const { workStatus, updateWorkStatus, resetWorkStatus } = useWorkStatus();
+  const { weatherAlertMessage, showWeatherAlert, dismissWeatherAlert } =
+    useWeather();
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [refreshing, setRefreshing] = useState(false);
@@ -214,118 +219,142 @@ export default function HomeScreen() {
   });
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>{t("timeManager")}</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => navigation.navigate("Settings")}
-          >
-            <Ionicons
-              name="settings-outline"
-              size={24}
-              color={theme.colors.text}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => navigation.navigate("Statistics")}
-          >
-            <Ionicons name="stats-chart" size={24} color={theme.colors.text} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <StatusBar style={theme.dark ? "light" : "dark"} />
 
-      <View style={styles.timeContainer}>
-        <Text style={styles.time}>{format(currentTime, "HH:mm")}</Text>
-        <Text style={styles.date}>{format(currentTime, "EEEE, dd/MM")}</Text>
-      </View>
-
-      {currentShift && (
-        <View style={styles.shiftContainer}>
-          <View style={styles.shiftInfo}>
-            <Ionicons
-              name="calendar-outline"
-              size={24}
-              color={theme.colors.primary}
-              style={styles.shiftIcon}
-            />
-            <View>
-              <Text style={styles.shiftName}>{currentShift.name}</Text>
-              <Text style={styles.shiftTime}>
-                {currentShift.startTime} → {currentShift.endTime}
-              </Text>
-            </View>
-          </View>
-        </View>
+      {/* Weather Alert Banner hiển thị trên cùng nếu có */}
+      {showWeatherAlert && (
+        <WeatherAlert
+          alertMessage={weatherAlertMessage}
+          isVisible={showWeatherAlert}
+          onDismiss={dismissWeatherAlert}
+          playSoundAlert={true}
+        />
       )}
 
-      {/* Weather Forecast Component */}
-      <WeatherForecast />
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>{t("timeManager")}</Text>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => navigation.navigate("Settings")}
+            >
+              <Ionicons
+                name="settings-outline"
+                size={24}
+                color={theme.colors.text}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => navigation.navigate("Statistics")}
+            >
+              <Ionicons
+                name="stats-chart"
+                size={24}
+                color={theme.colors.text}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-      <View style={styles.actionButtonContainer}>
-        <ActionButton
-          status={workStatus.status}
-          onPress={handleActionButtonPress}
-          onReset={handleResetStatus}
-        />
+        <View style={styles.timeContainer}>
+          <Text style={styles.time}>{format(currentTime, "HH:mm")}</Text>
+          <Text style={styles.date}>{format(currentTime, "EEEE, dd/MM")}</Text>
+        </View>
 
-        {workStatus.status !== "idle" && (
-          <View style={styles.statusHistory}>
-            {workStatus.goToWorkTime && (
-              <Text style={styles.historyItem}>
-                {t("goneToWork")}{" "}
-                {format(new Date(workStatus.goToWorkTime), "HH:mm")}
-              </Text>
-            )}
-            {workStatus.clockInTime && (
-              <Text style={styles.historyItem}>
-                {t("clockedIn")}{" "}
-                {format(new Date(workStatus.clockInTime), "HH:mm")}
-              </Text>
-            )}
-            {workStatus.clockOutTime && (
-              <Text style={styles.historyItem}>
-                {t("clockedOut")}{" "}
-                {format(new Date(workStatus.clockOutTime), "HH:mm")}
-              </Text>
-            )}
+        {currentShift && (
+          <View style={styles.shiftContainer}>
+            <View style={styles.shiftInfo}>
+              <Ionicons
+                name="calendar-outline"
+                size={24}
+                color={theme.colors.primary}
+                style={styles.shiftIcon}
+              />
+              <View>
+                <Text style={styles.shiftName}>{currentShift.name}</Text>
+                <Text style={styles.shiftTime}>
+                  {currentShift.startTime} → {currentShift.endTime}
+                </Text>
+              </View>
+            </View>
           </View>
         )}
-      </View>
 
-      <View style={styles.divider} />
+        {/* Weather Forecast Component */}
+        <WeatherForecast />
 
-      <View style={styles.section}>
-        <WeeklyStatus workLogs={workLogs} />
-      </View>
+        <View style={styles.actionButtonContainer}>
+          <ActionButton
+            status={workStatus.status}
+            onPress={handleActionButtonPress}
+            onReset={handleResetStatus}
+          />
 
-      <View style={styles.divider} />
-
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{t("notes")}</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setShowAddNote(true)}
-          >
-            <Feather name="plus" size={16} color="white" />
-            <Text style={styles.addButtonText}>{t("addNote")}</Text>
-          </TouchableOpacity>
+          {workStatus.status !== "idle" && (
+            <View style={styles.statusHistory}>
+              {workStatus.goToWorkTime && (
+                <Text style={styles.historyItem}>
+                  {t("goneToWork")}{" "}
+                  {format(new Date(workStatus.goToWorkTime), "HH:mm")}
+                </Text>
+              )}
+              {workStatus.clockInTime && (
+                <Text style={styles.historyItem}>
+                  {t("clockedIn")}{" "}
+                  {format(new Date(workStatus.clockInTime), "HH:mm")}
+                </Text>
+              )}
+              {workStatus.clockOutTime && (
+                <Text style={styles.historyItem}>
+                  {t("clockedOut")}{" "}
+                  {format(new Date(workStatus.clockOutTime), "HH:mm")}
+                </Text>
+              )}
+            </View>
+          )}
         </View>
-        <Notes />
-      </View>
 
-      <AddNoteModal
-        visible={showAddNote}
-        onClose={() => setShowAddNote(false)}
-      />
-    </ScrollView>
+        <View style={styles.divider} />
+
+        <View style={styles.section}>
+          <WeeklyStatus workLogs={workLogs} />
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t("notes")}</Text>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => setShowAddNote(true)}
+            >
+              <Feather name="plus" size={16} color="white" />
+              <Text style={styles.addButtonText}>{t("addNote")}</Text>
+            </TouchableOpacity>
+          </View>
+          <Notes />
+        </View>
+
+        <AddNoteModal
+          visible={showAddNote}
+          onClose={() => setShowAddNote(false)}
+        />
+      </ScrollView>
+    </View>
   );
 }
