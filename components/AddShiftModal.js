@@ -196,6 +196,19 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
       }
     }
 
+    // Helper function to calculate time difference in minutes, handling overnight shifts
+    const getTimeDifferenceInMinutes = (startDate, endDate) => {
+      const startMinutes = timeToMinutes(startDate)
+      let endMinutes = timeToMinutes(endDate)
+
+      // If end time is earlier than start time, assume it's the next day
+      if (endMinutes < startMinutes) {
+        endMinutes += 24 * 60 // Add 24 hours in minutes
+      }
+
+      return endMinutes - startMinutes
+    }
+
     // Validate departure time vs start time
     const departureToStartDiff = getTimeDifferenceInMinutes(departureTime, startTime)
     if (departureToStartDiff < 5) {
@@ -204,9 +217,7 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
 
     // Validate start time vs office end time
     const startToOfficeEndDiff = getTimeDifferenceInMinutes(startTime, officeEndTime)
-    if (startToOfficeEndDiff < 0) {
-      newErrors.startTime = t("startTimeBeforeOfficeEnd")
-    } else if (startToOfficeEndDiff < 120) {
+    if (startToOfficeEndDiff < 120) {
       // 2 hours = 120 minutes
       newErrors.officeEndTime = t("minWorkingHours")
     }

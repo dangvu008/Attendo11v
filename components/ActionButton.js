@@ -20,8 +20,6 @@ export default function ActionButton() {
   const [animation] = useState(new Animated.Value(0))
   const [isMultiAction, setIsMultiAction] = useState(true)
   const actionButtonRef = useRef(null)
-  // Add a state to track if an action is currently being processed
-  const [isProcessing, setIsProcessing] = useState(false)
 
   // Lấy cài đặt chế độ nút từ AsyncStorage
   useEffect(() => {
@@ -56,30 +54,21 @@ export default function ActionButton() {
     }
   }
 
-  // Add proper error handling and logging to the handleActionButtonPress function
+  // Trong hàm handleActionPress, thêm kiểm tra chế độ nút
   const handleActionPress = async (action) => {
+    const timestamp = new Date()
+    const today = format(timestamp, "yyyy-MM-dd")
+
     try {
-      const timestamp = new Date()
-      const today = format(timestamp, "yyyy-MM-dd")
-
-      console.log(`[ActionButton] Handling action: ${action}`)
-
       // Hủy thông báo tương ứng
-      try {
-        await cancelNotificationByType(action, today)
-      } catch (notificationError) {
-        console.error(`[ActionButton] Error canceling notification for ${action}:`, notificationError)
-        // Continue execution even if notification cancellation fails
-      }
+      await cancelNotificationByType(action, today)
 
       // Kiểm tra xem có phải chế độ chỉ có nút "Đi làm" không
       if (!isMultiAction && action === "go_work") {
-        console.log("[ActionButton] Using single action mode (go_work -> complete)")
         // Nếu là chế độ chỉ có nút "Đi làm", thì cập nhật trạng thái thành "complete" luôn
         await updateWorkStatus("complete", timestamp)
       } else {
         // Cập nhật trạng thái bình thường
-        console.log(`[ActionButton] Using multi-action mode: ${action}`)
         await updateWorkStatus(action, timestamp)
       }
 
@@ -96,7 +85,7 @@ export default function ActionButton() {
         })
       }
     } catch (error) {
-      console.error("[ActionButton] Failed to process action:", error)
+      console.error("Failed to process action:", error)
       Alert.alert(t("error"), t("failedToSaveWorkLog"))
     }
   }
@@ -290,6 +279,16 @@ export default function ActionButton() {
       color: "white",
       fontWeight: "bold",
       marginLeft: 8,
+    },
+    statusText: {
+      marginTop: 8,
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      textAlign: "center",
+    },
+    statusHistory: {
+      marginTop: 16,
+      alignItems: "center",
     },
     historyItem: {
       fontSize: 14,

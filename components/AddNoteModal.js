@@ -87,7 +87,7 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
   // Validate form whenever values change
   useEffect(() => {
     validateForm()
-  }, [title, content, reminderDate, explicitReminderDays, associatedShiftIds, existingNotes])
+  }, [title, content, reminderDate, explicitReminderDays, associatedShiftIds])
 
   const resetForm = () => {
     setId("")
@@ -175,10 +175,10 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
             const noteData = {
               title: title.trim(),
               content: content.trim(),
-              reminderTime: reminderDate.toISOString(),
+              reminderTime: reminderDate.toISOString(), // Ensure ISO format with timezone
               associatedShiftIds: associatedShiftIds,
               explicitReminderDays: associatedShiftIds.length > 0 ? [] : explicitReminderDays,
-              updatedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(), // Ensure ISO format with timezone
             }
 
             if (editNote) {
@@ -189,7 +189,7 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
               await saveNote({
                 ...noteData,
                 id: uuidv4(),
-                createdAt: new Date().toISOString(),
+                createdAt: new Date().toISOString(), // Ensure ISO format with timezone
               })
             }
 

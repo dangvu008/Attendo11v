@@ -163,6 +163,12 @@ export default function HomeScreen() {
       alignItems: "center",
       marginVertical: 24,
     },
+    statusText: {
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+      marginTop: 8,
+      textAlign: "center",
+    },
     statusHistory: {
       marginTop: 8,
     },

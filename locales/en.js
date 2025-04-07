@@ -141,12 +141,9 @@ export const en = {
   alertHeat: "Alert for Hot Weather",
   alertStorm: "Alert for Storms",
   weatherInitError: "Failed to initialize weather data",
-  locationPermissionDenied: "Location permission denied",
-  showDetails: "Show Details",
-  hideDetails: "Hide Details",
-  description: "Description",
-  humidity: "Humidity",
-  windSpeed: "Wind Speed",
+  currentWeather: "Current Weather",
+  next3Hours: "Next 3 Hours",
+  loadingWeather: "Loading weather data...",
 
   // Weather conditions
   clear: "Clear",
@@ -165,6 +162,7 @@ export const en = {
   overtime: "Overtime",
   activityLogs: "Activity Logs",
   noLogsForThisDay: "No activity logs for this day",
+  locationPermissionDenied: "Location permission denied",
   failedToSaveSettings: "Failed to save settings",
 
   // Chọn ca làm việc

@@ -126,9 +126,18 @@ export const getWorkLogs = async (startDate, endDate) => {
 export const saveWorkLog = async (log) => {
   try {
     const logs = await getWorkLogs()
+
+    // Ensure timestamp has timezone information
+    const timestamp = log.timestamp
+      ? log.timestamp instanceof Date
+        ? log.timestamp.toISOString()
+        : log.timestamp
+      : new Date().toISOString()
+
     const newLog = {
       ...log,
       id: Date.now(),
+      timestamp: timestamp, // Ensure ISO format with timezone
     }
 
     logs.push(newLog)
@@ -203,11 +212,29 @@ export const getNotes = async () => {
 export const saveNote = async (note) => {
   try {
     const notes = await getNotes()
+
+    // Ensure timestamps have timezone information
+    const createdAt = note.createdAt
+      ? note.createdAt instanceof Date
+        ? note.createdAt.toISOString()
+        : note.createdAt
+      : new Date().toISOString()
+
+    const updatedAt = new Date().toISOString()
+
+    // Ensure reminderTime has timezone if it exists
+    const reminderTime = note.reminderTime
+      ? note.reminderTime instanceof Date
+        ? note.reminderTime.toISOString()
+        : note.reminderTime
+      : null
+
     const newNote = {
       ...note,
-      id: note.id || uuidv4(), // Sử dụng UUID nếu không có ID
-      createdAt: note.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      id: note.id || uuidv4(), // Use UUID if no ID
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      reminderTime: reminderTime,
     }
 
     notes.push(newNote)

@@ -1,137 +1,290 @@
 import * as Notifications from "expo-notifications"
-import { initNotifications, scheduleNotification } from "./notificationUtils"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import { calculateAlarmTime, getNextDayOfWeek } from "./timeUtils"
 
-// Add a logging function to track notification activities
-const logNotificationActivity = async (action, details) => {
-  try {
-    const now = new Date().toISOString()
-    const logKey = "attendo_notification_logs"
-    const existingLogsJson = await AsyncStorage.getItem(logKey)
-    const existingLogs = existingLogsJson ? JSON.parse(existingLogsJson) : []
-
-    // Add new log entry
-    const newLog = {
-      timestamp: now,
-      action,
-      details,
-    }
-
-    // Keep only the last 100 logs to prevent storage issues
-    const updatedLogs = [newLog, ...existingLogs].slice(0, 100)
-    await AsyncStorage.setItem(logKey, JSON.stringify(updatedLogs))
-
-    console.log(`[Notification ${action}]`, details)
-  } catch (error) {
-    console.error("Failed to log notification activity:", error)
-  }
-}
-
-// Add a function to check for duplicate notifications
-const isDuplicateNotification = async (identifier, timeWindowMinutes = 60) => {
-  try {
-    const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync()
-
-    // Check if there's already a notification with the same identifier
-    const existingNotification = scheduledNotifications.find((notification) => notification.identifier === identifier)
-
-    if (existingNotification) {
-      // If notification exists, check if it's scheduled within the time window
-      const existingTriggerDate = new Date(existingNotification.trigger.date)
-      const now = new Date()
-      const timeDiffMinutes = Math.abs((existingTriggerDate - now) / (60 * 1000))
-
-      // If it's within the time window, consider it a duplicate
-      return timeDiffMinutes <= timeWindowMinutes
-    }
-
-    return false
-  } catch (error) {
-    console.error("Error checking for duplicate notifications:", error)
-    return false // In case of error, allow the notification to be scheduled
-  }
-}
-
-// Add a notification log tracker to prevent duplicates
-const NOTIFICATION_LOG_KEY = "attendo_notification_log"
+// Storage keys for notification IDs
+const NOTIFICATION_IDS_KEY = "attendo_notification_ids"
+const SHIFT_NOTIFICATION_PREFIX = "shift_notification_"
+const NOTE_NOTIFICATION_PREFIX = "note_notification_"
 
 /**
- * Log a scheduled notification to prevent duplicates
- * @param {string} identifier - Unique notification identifier
- * @param {Date} scheduledTime - When the notification is scheduled for
+ * Initialize notifications and request permissions
+ * @returns {Promise<boolean>} Whether permissions were granted
  */
-const logScheduledNotification = async (identifier, scheduledTime) => {
+export const initNotifications = async () => {
   try {
-    const logJson = await AsyncStorage.getItem(NOTIFICATION_LOG_KEY)
-    const log = logJson ? JSON.parse(logJson) : {}
-
-    // Store the scheduled time
-    log[identifier] = {
-      scheduledAt: new Date().toISOString(),
-      scheduledFor: scheduledTime.toISOString(),
+    // Request permissions
+    const { status } = await Notifications.requestPermissionsAsync()
+    if (status !== "granted") {
+      console.warn("Notification permissions not granted")
+      return false
     }
 
-    // Clean up old entries (older than 7 days)
-    const now = new Date()
-    const oneWeekAgo = new Date(now.setDate(now.getDate() - 7))
-
-    Object.keys(log).forEach((key) => {
-      const entry = log[key]
-      if (new Date(entry.scheduledFor) < oneWeekAgo) {
-        delete log[key]
-      }
+    // Configure notification behavior
+    await Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
     })
 
-    await AsyncStorage.setItem(NOTIFICATION_LOG_KEY, JSON.stringify(log))
-    console.log(`[Notification] Logged: ${identifier} for ${scheduledTime.toISOString()}`)
+    return true
   } catch (error) {
-    console.error("[Notification] Failed to log scheduled notification:", error)
-  }
-}
-
-/**
- * Check if a notification with the same identifier has been scheduled recently
- * @param {string} identifier - Notification identifier
- * @returns {boolean} True if already scheduled
- */
-const isNotificationAlreadyScheduled = async (identifier) => {
-  try {
-    const logJson = await AsyncStorage.getItem(NOTIFICATION_LOG_KEY)
-    if (!logJson) return false
-
-    const log = JSON.parse(logJson)
-    return !!log[identifier]
-  } catch (error) {
-    console.error("[Notification] Failed to check notification log:", error)
+    console.error("Failed to initialize notifications:", error)
     return false
   }
 }
 
 /**
- * Lên lịch thông báo cho ghi chú
- * @param {Object} note - Thông tin ghi chú
- * @param {Array} shifts - Danh sách ca làm việc
+ * Schedule a notification and store its ID
+ * @param {Object} options - Notification options
+ * @returns {Promise<string|null>} Notification ID or null if failed
  */
-export const scheduleNoteNotifications = async (note, shifts) => {
+export const scheduleNotification = async (options) => {
   try {
-    if (!note.reminderTime) return
-
+    // Check if we have permission
     const hasPermission = await initNotifications()
     if (!hasPermission) {
-      logNotificationActivity("permission_denied", { noteId: note.id })
+      return null
+    }
+
+    // Ensure we have a valid identifier
+    const identifier = options.identifier || `notification_${Date.now()}`
+
+    // Schedule the notification
+    const notificationId = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: options.title,
+        body: options.body,
+        data: options.data || {},
+      },
+      trigger: options.date ? { date: options.date } : null,
+      identifier: identifier,
+    })
+
+    // Store the notification ID for later cancellation
+    await storeNotificationId(identifier, notificationId)
+
+    return notificationId
+  } catch (error) {
+    console.error("Failed to schedule notification:", error)
+    return null
+  }
+}
+
+/**
+ * Store a notification ID for later cancellation
+ * @param {string} key - Key to identify the notification
+ * @param {string} notificationId - Notification ID
+ */
+const storeNotificationId = async (key, notificationId) => {
+  try {
+    // Get existing notification IDs
+    const idsJson = await AsyncStorage.getItem(NOTIFICATION_IDS_KEY)
+    const ids = idsJson ? JSON.parse(idsJson) : {}
+
+    // Add new ID
+    ids[key] = notificationId
+
+    // Save back to storage
+    await AsyncStorage.setItem(NOTIFICATION_IDS_KEY, JSON.stringify(ids))
+  } catch (error) {
+    console.error("Failed to store notification ID:", error)
+  }
+}
+
+/**
+ * Get a stored notification ID
+ * @param {string} key - Key to identify the notification
+ * @returns {Promise<string|null>} Notification ID or null if not found
+ */
+const getNotificationId = async (key) => {
+  try {
+    const idsJson = await AsyncStorage.getItem(NOTIFICATION_IDS_KEY)
+    const ids = idsJson ? JSON.parse(idsJson) : {}
+    return ids[key] || null
+  } catch (error) {
+    console.error("Failed to get notification ID:", error)
+    return null
+  }
+}
+
+/**
+ * Remove a stored notification ID
+ * @param {string} key - Key to identify the notification
+ */
+const removeNotificationId = async (key) => {
+  try {
+    const idsJson = await AsyncStorage.getItem(NOTIFICATION_IDS_KEY)
+    const ids = idsJson ? JSON.parse(idsJson) : {}
+
+    // Remove the ID
+    delete ids[key]
+
+    // Save back to storage
+    await AsyncStorage.setItem(NOTIFICATION_IDS_KEY, JSON.stringify(ids))
+  } catch (error) {
+    console.error("Failed to remove notification ID:", error)
+  }
+}
+
+/**
+ * Cancel a notification by type and date
+ * @param {string} type - Notification type
+ * @param {string} date - Date string
+ */
+export const cancelNotificationByType = async (type, date) => {
+  try {
+    const key = `${type}_${date}`
+    const notificationId = await getNotificationId(key)
+
+    if (notificationId) {
+      await Notifications.cancelScheduledNotificationAsync(notificationId)
+      await removeNotificationId(key)
+    }
+  } catch (error) {
+    console.error("Failed to cancel notification:", error)
+  }
+}
+
+/**
+ * Schedule notifications for a shift
+ * @param {Object} shift - Shift data
+ */
+export const scheduleShiftNotifications = async (shift) => {
+  try {
+    // Check if we have permission
+    const hasPermission = await initNotifications()
+    if (!hasPermission) {
       return
     }
 
-    // Xác định các ngày cần nhắc nhở
+    // Cancel any existing notifications for this shift
+    await cancelShiftNotifications(shift.id)
+
+    // For each day the shift applies to
+    for (const dayIndex of shift.days) {
+      // Get the next occurrence of this day
+      const nextDate = getNextDayOfWeek(dayIndex)
+
+      // Set up departure time notification
+      if (shift.departureTime && shift.remindBeforeStart) {
+        const [hours, minutes] = shift.departureTime.split(":").map(Number)
+        const departureDate = new Date(nextDate)
+        departureDate.setHours(hours, minutes, 0, 0)
+
+        // Calculate alarm time (before departure)
+        const alarmTime = calculateAlarmTime(departureDate, shift.remindBeforeStart)
+
+        if (alarmTime) {
+          const notificationKey = `${SHIFT_NOTIFICATION_PREFIX}${shift.id}_departure_${dayIndex}`
+
+          // Check if we already have this notification scheduled
+          const existingId = await getNotificationId(notificationKey)
+          if (!existingId) {
+            await scheduleNotification({
+              title: "Time to Leave",
+              body: `It's time to leave for your ${shift.name} shift`,
+              date: alarmTime,
+              data: { type: "shift_departure", shiftId: shift.id },
+              identifier: notificationKey,
+            })
+          }
+        }
+      }
+
+      // Set up end time notification
+      if (shift.endTime && shift.remindAfterEnd) {
+        const [hours, minutes] = shift.endTime.split(":").map(Number)
+        const endDate = new Date(nextDate)
+        endDate.setHours(hours, minutes, 0, 0)
+
+        // Handle overnight shifts
+        const [startHours, startMinutes] = shift.startTime.split(":").map(Number)
+        const startDate = new Date(nextDate)
+        startDate.setHours(startHours, startMinutes, 0, 0)
+
+        // If end time is before start time, it's the next day
+        if (endDate < startDate) {
+          endDate.setDate(endDate.getDate() + 1)
+        }
+
+        const notificationKey = `${SHIFT_NOTIFICATION_PREFIX}${shift.id}_end_${dayIndex}`
+
+        // Check if we already have this notification scheduled
+        const existingId = await getNotificationId(notificationKey)
+        if (!existingId) {
+          await scheduleNotification({
+            title: "Shift Ended",
+            body: `Your ${shift.name} shift has ended`,
+            date: endDate,
+            data: { type: "shift_end", shiftId: shift.id },
+            identifier: notificationKey,
+          })
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Failed to schedule shift notifications:", error)
+  }
+}
+
+/**
+ * Cancel all notifications for a shift
+ * @param {string} shiftId - Shift ID
+ */
+export const cancelShiftNotifications = async (shiftId) => {
+  try {
+    const idsJson = await AsyncStorage.getItem(NOTIFICATION_IDS_KEY)
+    const ids = idsJson ? JSON.parse(idsJson) : {}
+
+    // Find all notification IDs for this shift
+    const prefix = `${SHIFT_NOTIFICATION_PREFIX}${shiftId}`
+    const keysToRemove = Object.keys(ids).filter((key) => key.startsWith(prefix))
+
+    // Cancel each notification
+    for (const key of keysToRemove) {
+      const notificationId = ids[key]
+      if (notificationId) {
+        await Notifications.cancelScheduledNotificationAsync(notificationId)
+        delete ids[key]
+      }
+    }
+
+    // Save updated IDs
+    await AsyncStorage.setItem(NOTIFICATION_IDS_KEY, JSON.stringify(ids))
+  } catch (error) {
+    console.error("Failed to cancel shift notifications:", error)
+  }
+}
+
+/**
+ * Schedule notifications for a note
+ * @param {Object} note - Note data
+ * @param {Array} shifts - Shifts data
+ */
+export const scheduleNoteNotifications = async (note, shifts) => {
+  if (!note.reminderTime) return
+
+  try {
+    // Check if we have permission
+    const hasPermission = await initNotifications()
+    if (!hasPermission) return
+
+    // Cancel any existing notifications for this note
+    await cancelNoteNotifications(note.id)
+
+    // Determine reminder days
     let reminderDays = []
 
-    // Nếu ghi chú liên kết với ca làm việc
+    // If note is linked to shifts
     if (note.associatedShiftIds && note.associatedShiftIds.length > 0) {
-      // Lấy tất cả ngày từ các ca được liên kết
+      // Get all days from linked shifts
       note.associatedShiftIds.forEach((shiftId) => {
         const shift = shifts.find((s) => s.id === shiftId)
         if (shift && shift.days) {
-          // Thêm các ngày không trùng lặp
+          // Add non-duplicate days
           shift.days.forEach((day) => {
             if (!reminderDays.includes(day)) {
               reminderDays.push(day)
@@ -140,181 +293,76 @@ export const scheduleNoteNotifications = async (note, shifts) => {
         }
       })
     }
-    // Nếu ghi chú không liên kết với ca
+    // If note is not linked to shifts
     else if (note.explicitReminderDays && note.explicitReminderDays.length > 0) {
-      // Chuyển đổi index thành mã ngày
-      reminderDays = note.explicitReminderDays.map((index) => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index])
+      reminderDays = note.explicitReminderDays
     }
 
-    // Nếu không có ngày nào, không lên lịch
-    if (reminderDays.length === 0) {
-      logNotificationActivity("no_reminder_days", { noteId: note.id })
-      return
-    }
+    // If no days, don't schedule
+    if (reminderDays.length === 0) return
 
-    // Lấy giờ và phút từ reminderTime
+    // Get reminder time
     const reminderDate = new Date(note.reminderTime)
     const hours = reminderDate.getHours()
     const minutes = reminderDate.getMinutes()
 
-    // Lên lịch thông báo cho từng ngày
-    for (const day of reminderDays) {
-      const dayIndex = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(day)
-      if (dayIndex === -1) continue
-
-      // Tính toán ngày tiếp theo của tuần có ngày này
+    // Schedule for each day
+    for (const dayIndex of reminderDays) {
+      // Get next occurrence of this day
       const nextDate = getNextDayOfWeek(dayIndex)
       nextDate.setHours(hours, minutes, 0, 0)
 
-      // Nếu thời gian đã qua, chuyển sang tuần sau
-      if (nextDate < new Date()) {
+      // If time has passed, move to next week
+      const now = new Date()
+      if (nextDate < now) {
         nextDate.setDate(nextDate.getDate() + 7)
       }
 
-      const notificationId = `note_${note.id}_${day}`
+      const notificationKey = `${NOTE_NOTIFICATION_PREFIX}${note.id}_${dayIndex}`
 
-      // Check for duplicates before scheduling
-      const isDuplicate = await isDuplicateNotification(notificationId)
-      if (isDuplicate) {
-        logNotificationActivity("duplicate_skipped", {
-          noteId: note.id,
-          day,
-          scheduledTime: nextDate.toISOString(),
+      // Check if we already have this notification scheduled
+      const existingId = await getNotificationId(notificationKey)
+      if (!existingId) {
+        await scheduleNotification({
+          title: note.title,
+          body: note.content,
+          date: nextDate,
+          data: { type: "note", noteId: note.id },
+          identifier: notificationKey,
         })
-        continue
       }
-
-      // Lên lịch thông báo
-      await scheduleNotification({
-        title: note.title,
-        body: note.content,
-        date: nextDate,
-        data: { type: "note", noteId: note.id },
-        identifier: notificationId,
-      })
-
-      logNotificationActivity("scheduled", {
-        noteId: note.id,
-        day,
-        scheduledTime: nextDate.toISOString(),
-      })
     }
   } catch (error) {
-    console.error("Error scheduling note notifications:", error)
-    logNotificationActivity("error", {
-      noteId: note?.id,
-      error: error.message,
-    })
+    console.error("Failed to schedule note notifications:", error)
   }
 }
 
 /**
- * Hủy tất cả thông báo của một ghi chú
- * @param {string} noteId - ID của ghi chú
+ * Cancel all notifications for a note
+ * @param {string} noteId - Note ID
  */
 export const cancelNoteNotifications = async (noteId) => {
   try {
-    // Get all scheduled notifications
-    const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync()
+    const idsJson = await AsyncStorage.getItem(NOTIFICATION_IDS_KEY)
+    const ids = idsJson ? JSON.parse(idsJson) : {}
 
-    // Filter notifications related to this note
-    const noteNotifications = scheduledNotifications.filter((notification) =>
-      notification.identifier.startsWith(`note_${noteId}_`),
-    )
+    // Find all notification IDs for this note
+    const prefix = `${NOTE_NOTIFICATION_PREFIX}${noteId}`
+    const keysToRemove = Object.keys(ids).filter((key) => key.startsWith(prefix))
 
     // Cancel each notification
-    for (const notification of noteNotifications) {
-      await Notifications.cancelScheduledNotificationAsync(notification.identifier)
-      logNotificationActivity("canceled", {
-        noteId,
-        identifier: notification.identifier,
-      })
+    for (const key of keysToRemove) {
+      const notificationId = ids[key]
+      if (notificationId) {
+        await Notifications.cancelScheduledNotificationAsync(notificationId)
+        delete ids[key]
+      }
     }
+
+    // Save updated IDs
+    await AsyncStorage.setItem(NOTIFICATION_IDS_KEY, JSON.stringify(ids))
   } catch (error) {
-    console.error("Error canceling note notifications:", error)
-    logNotificationActivity("cancel_error", {
-      noteId,
-      error: error.message,
-    })
-  }
-}
-
-/**
- * Hủy thông báo theo loại
- * @param {string} type - Loại thông báo
- * @param {string} date - Ngày (định dạng yyyy-MM-dd)
- */
-export const cancelNotificationByType = async (type, date) => {
-  try {
-    // Get all scheduled notifications
-    const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync()
-
-    // Filter notifications by type and date
-    const matchingNotifications = scheduledNotifications.filter((notification) => {
-      const notificationData = notification.content.data || {}
-      return notificationData.type === type && notificationData.date === date
-    })
-
-    // Cancel each matching notification
-    for (const notification of matchingNotifications) {
-      await Notifications.cancelScheduledNotificationAsync(notification.identifier)
-      logNotificationActivity("canceled_by_type", {
-        type,
-        date,
-        identifier: notification.identifier,
-      })
-    }
-  } catch (error) {
-    console.error(`Error canceling ${type} notifications for ${date}:`, error)
-    logNotificationActivity("cancel_by_type_error", {
-      type,
-      date,
-      error: error.message,
-    })
-  }
-}
-
-/**
- * Lấy ngày tiếp theo của tuần có ngày cụ thể
- * @param {number} dayIndex - Index của ngày (0 = Thứ 2, 6 = Chủ nhật)
- * @returns {Date} Ngày tiếp theo
- */
-const getNextDayOfWeek = (dayIndex) => {
-  const today = new Date()
-  const todayDayIndex = (today.getDay() + 6) % 7 // Chuyển đổi 0 = Chủ nhật sang 0 = Thứ 2
-
-  let daysToAdd = dayIndex - todayDayIndex
-  if (daysToAdd <= 0) {
-    daysToAdd += 7
-  }
-
-  const nextDate = new Date(today)
-  nextDate.setDate(today.getDate() + daysToAdd)
-  return nextDate
-}
-
-// Add a function to clear all notifications (useful for debugging)
-export const clearAllNotifications = async () => {
-  try {
-    await Notifications.cancelAllScheduledNotificationsAsync()
-    logNotificationActivity("cleared_all", { timestamp: new Date().toISOString() })
-    return true
-  } catch (error) {
-    console.error("Error clearing all notifications:", error)
-    logNotificationActivity("clear_all_error", { error: error.message })
-    return false
-  }
-}
-
-// Add a function to get notification logs (useful for debugging)
-export const getNotificationLogs = async () => {
-  try {
-    const logKey = "attendo_notification_logs"
-    const logsJson = await AsyncStorage.getItem(logKey)
-    return logsJson ? JSON.parse(logsJson) : []
-  } catch (error) {
-    console.error("Error getting notification logs:", error)
-    return []
+    console.error("Failed to cancel note notifications:", error)
   }
 }
 
