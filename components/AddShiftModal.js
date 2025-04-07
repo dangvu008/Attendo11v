@@ -157,11 +157,6 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
     });
   };
 
-  // Helper function to convert time to minutes for comparison
-  const timeToMinutes = (date) => {
-    return date.getHours() * 60 + date.getMinutes();
-  };
-
   const validateForm = useCallback(() => {
     const newErrors = {
       name: null,
@@ -170,6 +165,11 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
       officeEndTime: null,
       endTime: null,
       selectedWeekdays: null,
+    };
+
+    // Helper function to convert time to minutes for comparison
+    const timeToMinutes = (date) => {
+      return date.getHours() * 60 + date.getMinutes();
     };
 
     // Validate name
@@ -259,7 +259,6 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
     selectedWeekdays,
     existingShifts,
     t,
-    timeToMinutes,
   ]);
 
   const handleSave = async () => {
