@@ -246,175 +246,123 @@ export default function WeatherForecast() {
 
   const styles = StyleSheet.create({
     container: {
+      marginHorizontal: 16,
+      marginBottom: 16,
       backgroundColor: theme.colors.card,
       borderRadius: 12,
-      padding: 10,
-      marginHorizontal: 16,
-      marginBottom: 10,
+      padding: 16,
       shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
+      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
-      shadowRadius: 2,
-      elevation: 2,
+      shadowRadius: 4,
+      elevation: 3,
     },
     header: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      marginBottom: 6,
+      marginBottom: 16,
     },
     title: {
-      fontSize: 16,
+      fontSize: 20,
       fontWeight: "bold",
       color: theme.colors.text,
     },
     refreshButton: {
-      padding: 4,
+      padding: 8,
     },
-    forecastContainer: {
-      flex: 1,
-    },
-    currentWeather: {
-      marginBottom: 8,
-    },
-    currentLabel: {
-      fontSize: 12,
-      color: theme.colors.textSecondary,
-      marginBottom: 4,
-    },
-    currentDetails: {
+    weatherGrid: {
       flexDirection: "row",
-      alignItems: "center",
-    },
-    currentIcon: {
-      fontSize: 36,
-      marginRight: 8,
-      color: theme.colors.primary,
-    },
-    currentInfo: {
-      flex: 1,
-    },
-    currentTemp: {
-      fontSize: 20,
-      fontWeight: "bold",
-      color: theme.colors.text,
-      marginBottom: 2,
-    },
-    currentCondition: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-    },
-    divider: {
-      height: 1,
-      backgroundColor: theme.colors.border,
-      marginVertical: 8,
-    },
-    forecastLabel: {
-      fontSize: 12,
-      color: theme.colors.textSecondary,
-      marginBottom: 4,
-    },
-    hourlyContainer: {
-      flexDirection: "row",
+      flexWrap: "wrap",
       justifyContent: "space-between",
     },
-    hourlyForecast: {
+    weatherItem: {
+      width: "30%",
       alignItems: "center",
-      width: "32%",
-      paddingVertical: 4,
-    },
-    time: {
-      fontSize: 11,
-      color: theme.colors.textSecondary,
-      marginBottom: 2,
+      marginBottom: 16,
     },
     weatherIcon: {
       width: 40,
       height: 40,
-      marginVertical: 2,
+      marginBottom: 8,
     },
-    temperature: {
-      fontSize: 14,
+    weatherTemp: {
+      fontSize: 16,
       fontWeight: "bold",
       color: theme.colors.text,
+      marginBottom: 4,
     },
-    condition: {
-      fontSize: 10,
+    weatherTime: {
+      fontSize: 12,
       color: theme.colors.textSecondary,
-      textAlign: "center",
     },
     loadingContainer: {
+      padding: 32,
       alignItems: "center",
-      justifyContent: "center",
-      height: 80,
-    },
-    loadingText: {
-      color: theme.colors.textSecondary,
-      marginTop: 4,
-      fontSize: 12,
     },
     errorContainer: {
+      padding: 16,
       alignItems: "center",
-      justifyContent: "center",
-      height: 80,
     },
     errorText: {
-      color: "#F44336",
-      marginBottom: 4,
-      fontSize: 12,
+      color: theme.colors.error,
+      textAlign: "center",
+      marginBottom: 16,
+    },
+    retryButton: {
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 8,
+    },
+    retryText: {
+      color: "white",
+      fontWeight: "bold",
     },
     alertContainer: {
-      backgroundColor: "#FFF3CD",
-      borderRadius: 8,
-      padding: 8,
-      marginTop: 8,
-      borderLeftWidth: 4,
-      borderLeftColor: "#FFC107",
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: theme.colors.error,
+      padding: 16,
+      zIndex: 1000,
     },
     alertTitle: {
-      fontSize: 12,
+      color: "white",
+      fontSize: 16,
       fontWeight: "bold",
-      color: "#856404",
-      marginBottom: 2,
+      marginBottom: 8,
     },
     alertText: {
-      fontSize: 11,
-      color: "#856404",
+      color: "white",
+      marginBottom: 4,
     },
-    settingsButton: {
-      marginTop: 8,
-      alignSelf: "flex-end",
-    },
-    settingsText: {
-      fontSize: 12,
-      color: theme.colors.primary,
+    alertCloseButton: {
+      position: "absolute",
+      top: 16,
+      right: 16,
     },
     settingsContainer: {
-      marginTop: 12,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
-      paddingTop: 12,
+      backgroundColor: theme.colors.card,
+      padding: 16,
+      borderRadius: 12,
     },
-    settingRow: {
+    settingsTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      color: theme.colors.text,
+      marginBottom: 16,
+    },
+    settingItem: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      marginBottom: 8,
+      marginBottom: 16,
     },
     settingLabel: {
-      fontSize: 14,
+      fontSize: 16,
       color: theme.colors.text,
-    },
-    testSoundButton: {
-      backgroundColor: theme.colors.primary,
-      padding: 8,
-      borderRadius: 4,
-      alignItems: "center",
-      marginTop: 10,
-    },
-    testSoundText: {
-      color: "#fff",
-      fontSize: 12,
     },
   });
 
@@ -511,57 +459,35 @@ export default function WeatherForecast() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.forecastContainer}>
+      <View style={styles.weatherGrid}>
         {weatherData && weatherData.length > 0 ? (
-          <>
-            <View style={styles.hourlyContainer}>
-              {/* Current Weather - First Item */}
-              <View style={[styles.hourlyForecast, { width: "32%" }]}>
-                <Text style={styles.time}>{t("currentWeather")}</Text>
-                <Image
-                  source={getWeatherIconClass(weatherData[0].condition)}
-                  style={styles.weatherIcon}
-                />
-                <Text style={styles.temperature}>
-                  {weatherData[0].temperature}°C
-                </Text>
-                <Text style={styles.condition}>
-                  {t(weatherData[0].condition)}
-                </Text>
-              </View>
-
-              {/* Next Hours - Only show 2 */}
-              {weatherData.slice(1, 3).map((item, index) => (
-                <View
-                  key={index}
-                  style={[styles.hourlyForecast, { width: "32%" }]}
-                >
-                  <Text style={styles.time}>{item.time}</Text>
-                  <Image
-                    source={getWeatherIconClass(item.condition, item.timestamp)}
-                    style={styles.weatherIcon}
-                  />
-                  <Text style={styles.temperature}>{item.temperature}°C</Text>
-                  <Text style={styles.condition}>{t(item.condition)}</Text>
-                </View>
-              ))}
+          weatherData.map((item, index) => (
+            <View key={index} style={styles.weatherItem}>
+              <Text style={styles.weatherTime}>{item.time}</Text>
+              <Image
+                source={getWeatherIconClass(item.condition, item.timestamp)}
+                style={styles.weatherIcon}
+              />
+              <Text style={styles.weatherTemp}>{item.temperature}°C</Text>
+              <Text style={styles.weatherTime}>{t(item.condition)}</Text>
             </View>
-
-            {/* Weather Alert nếu có */}
-            {renderWeatherAlert()}
-          </>
+          ))
         ) : (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>{t("loadingWeather")}</Text>
+            <Text style={styles.errorText}>{t("loadingWeather")}</Text>
           </View>
         )}
       </View>
 
+      {/* Weather Alert nếu có */}
+      {renderWeatherAlert()}
+
       {/* Ẩn Settings Button để thu gọn component */}
       {showSettings && (
         <View style={styles.settingsContainer}>
-          <View style={styles.settingRow}>
+          <Text style={styles.settingsTitle}>{t("weatherSettings")}</Text>
+          <View style={styles.settingItem}>
             <Text style={styles.settingLabel}>{t("enableAlerts")}</Text>
             <TouchableOpacity onPress={() => toggleAlertSetting("enabled")}>
               <Feather
@@ -572,7 +498,7 @@ export default function WeatherForecast() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.settingRow}>
+          <View style={styles.settingItem}>
             <Text style={styles.settingLabel}>{t("alertRain")}</Text>
             <TouchableOpacity onPress={() => toggleAlertSetting("alertRain")}>
               <Feather
@@ -583,7 +509,7 @@ export default function WeatherForecast() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.settingRow}>
+          <View style={styles.settingItem}>
             <Text style={styles.settingLabel}>{t("alertCold")}</Text>
             <TouchableOpacity onPress={() => toggleAlertSetting("alertCold")}>
               <Feather
@@ -594,7 +520,7 @@ export default function WeatherForecast() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.settingRow}>
+          <View style={styles.settingItem}>
             <Text style={styles.settingLabel}>{t("alertHeat")}</Text>
             <TouchableOpacity onPress={() => toggleAlertSetting("alertHeat")}>
               <Feather
@@ -605,7 +531,7 @@ export default function WeatherForecast() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.settingRow}>
+          <View style={styles.settingItem}>
             <Text style={styles.settingLabel}>{t("alertStorm")}</Text>
             <TouchableOpacity onPress={() => toggleAlertSetting("alertStorm")}>
               <Feather
@@ -616,7 +542,7 @@ export default function WeatherForecast() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.settingRow}>
+          <View style={styles.settingItem}>
             <Text style={styles.settingLabel}>{t("soundEnabled")}</Text>
             <TouchableOpacity
               onPress={() => toggleAlertSetting("soundEnabled")}
@@ -632,10 +558,10 @@ export default function WeatherForecast() {
           {/* Nút để test âm thanh */}
           {alertSettings.soundEnabled && (
             <TouchableOpacity
-              style={styles.testSoundButton}
+              style={styles.retryButton}
               onPress={() => playAlarm(0.8)}
             >
-              <Text style={styles.testSoundText}>{t("testSound")}</Text>
+              <Text style={styles.retryText}>{t("testSound")}</Text>
             </TouchableOpacity>
           )}
         </View>

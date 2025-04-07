@@ -51,9 +51,9 @@ export default function App() {
     const initializeApp = async () => {
       try {
         // Load weather icons font
-        await Font.loadAsync({
-          weathericons: require("./assets/fonts/weathericons-regular-webfont.ttf"),
-        });
+        // await Font.loadAsync({
+        //   weathericons: require("./assets/fonts/weathericons-regular-webfont.ttf"),
+        // });
 
         await initializeDatabase();
         setIsReady(true);

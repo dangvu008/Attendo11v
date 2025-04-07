@@ -2,35 +2,40 @@
 // In a real app, this would connect to a weather API
 
 import axios from "axios";
+import { weatherIcons } from "../assets/weather";
 
-// Weather icons
-const weatherIcons = {
-  clear: require("../assets/weather/clear.png"),
-  "partly-cloudy": require("../assets/weather/partly-cloudy.png"),
-  cloudy: require("../assets/weather/cloudy.png"),
-  rain: require("../assets/weather/rain.png"),
-  "heavy-rain": require("../assets/weather/heavy-rain.png"),
-  thunderstorm: require("../assets/weather/thunderstorm.png"),
-  snow: require("../assets/weather/snow.png"),
-  fog: require("../assets/weather/fog.png"),
+// Weather icons mapping
+const weatherIconMap = {
+  clear: weatherIcons.clear,
+  "partly-cloudy": weatherIcons["partly-cloudy"],
+  cloudy: weatherIcons.cloudy,
+  rain: weatherIcons.rain,
+  "heavy-rain": weatherIcons["heavy-rain"],
+  thunderstorm: weatherIcons.thunderstorm,
+  snow: weatherIcons.snow,
+  fog: weatherIcons.fog,
+  dust: weatherIcons.dust,
+  haze: weatherIcons.haze,
+  wind: weatherIcons.wind,
 };
 
 // Get weather icon based on condition
 export const getWeatherIcon = (condition) => {
-  if (condition.includes("clear")) return weatherIcons["clear"];
-  if (condition.includes("partly-cloudy")) return weatherIcons["partly-cloudy"];
-  if (condition.includes("cloudy")) return weatherIcons["cloudy"];
+  if (condition.includes("clear")) return weatherIconMap["clear"];
+  if (condition.includes("partly-cloudy"))
+    return weatherIconMap["partly-cloudy"];
+  if (condition.includes("cloudy")) return weatherIconMap["cloudy"];
   if (condition.includes("rain") && condition.includes("heavy"))
-    return weatherIcons["heavy-rain"];
-  if (condition.includes("rain")) return weatherIcons["rain"];
+    return weatherIconMap["heavy-rain"];
+  if (condition.includes("rain")) return weatherIconMap["rain"];
   if (condition.includes("thunder") || condition.includes("storm"))
-    return weatherIcons["thunderstorm"];
-  if (condition.includes("snow")) return weatherIcons["snow"];
+    return weatherIconMap["thunderstorm"];
+  if (condition.includes("snow")) return weatherIconMap["snow"];
   if (condition.includes("fog") || condition.includes("mist"))
-    return weatherIcons["fog"];
+    return weatherIconMap["fog"];
 
   // Default icon
-  return weatherIcons["partly-cloudy"];
+  return weatherIconMap["partly-cloudy"];
 };
 
 // Mock weather data for the next 3 hours

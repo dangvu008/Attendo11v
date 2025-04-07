@@ -193,26 +193,31 @@ export const WeatherProvider = ({ children }) => {
     setWeatherAlertMessage("");
   };
 
-  // Tải dữ liệu thời tiết khi component mount
+  // Tự động cập nhật dữ liệu thời tiết mỗi 30 phút
   useEffect(() => {
-    initWeatherData();
+    if (location) {
+      refreshWeatherData();
+    } else {
+      initWeatherData();
+    }
 
-    // Cập nhật dữ liệu định kỳ (30 phút)
-    const refreshInterval = setInterval(() => {
+    const interval = setInterval(() => {
       if (location) {
         refreshWeatherData();
+      } else {
+        initWeatherData();
       }
-    }, 30 * 60 * 1000);
+    }, 30 * 60 * 1000); // 30 phút
 
-    return () => clearInterval(refreshInterval);
-  }, []);
+    return () => clearInterval(interval);
+  }, [location, refreshWeatherData, initWeatherData]);
 
-  // Kiểm tra lại thời tiết khi ca làm việc thay đổi
+  // Kiểm tra thời tiết cho ca làm việc hiện tại
   useEffect(() => {
-    if (weatherData && activeShift) {
-      checkWeatherForActiveShift(weatherData, activeShift);
+    if (weatherData && currentShift) {
+      checkWeatherForActiveShift();
     }
-  }, [weatherData, activeShift, alertSettings]);
+  }, [weatherData, currentShift, checkWeatherForActiveShift]);
 
   return (
     <WeatherContext.Provider
