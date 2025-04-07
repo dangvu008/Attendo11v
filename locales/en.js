@@ -129,6 +129,8 @@ export const en = {
   weatherForecast: "Weather Forecast",
   weatherLoadError: "Failed to load weather data",
   weatherAlert: "Weather Alert",
+  understood: "Understood",
+  additionallyAlert: "Additionally,",
   prepareAccordingly: "Please prepare accordingly",
   heavyRain: "Heavy rain expected",
   coldWeather: "Cold weather expected",
@@ -171,4 +173,28 @@ export const en = {
   noShiftSelected: "No shift selected",
   selectedShiftsCount: "{{count}} shifts selected",
   noShift: "No shift (use selected days)",
+
+  // Weather alerts for going to work
+  heavyRainAlert:
+    "Heavy rain expected when going to work (around {{time}}), please bring an umbrella/raincoat.",
+  coldWeatherAlert:
+    "Low temperature (below 10°C) expected when going to work (around {{time}}), please dress warmly.",
+  hotWeatherAlert:
+    "High temperature (above 35°C) expected when going to work (around {{time}}), please protect yourself.",
+  stormWarningAlert:
+    "Storm/thunderstorm expected when going to work (around {{time}}), please be cautious.",
+
+  // Weather alerts for returning from work
+  heavyRainReturnAlert:
+    "Heavy rain expected when leaving work (around {{time}}), please bring an umbrella/raincoat.",
+  coldWeatherReturnAlert:
+    "Low temperature (below 10°C) expected when leaving work (around {{time}}), please dress warmly.",
+  hotWeatherReturnAlert:
+    "High temperature (above 35°C) expected when leaving work (around {{time}}), please protect yourself.",
+  stormWarningReturnAlert:
+    "Storm/thunderstorm expected when leaving work (around {{time}}), please be cautious.",
+
+  // Weather settings
+  soundEnabled: "Enable alert sound",
+  testSound: "Test sound",
 };
