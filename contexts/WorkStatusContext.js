@@ -205,6 +205,11 @@ export function WorkStatusProvider({ children }) {
           : { onlyGoWorkMode: false };
 
         // Truyền thông tin chế độ nút vào ca làm việc
+        if (!currentShift) {
+          console.warn("No current shift found when calculating work status");
+          return;
+        }
+
         const shiftWithButtonMode = {
           ...currentShift,
           onlyGoWorkMode: userSettings.onlyGoWorkMode,

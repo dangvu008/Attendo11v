@@ -17,7 +17,8 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
 import { useI18n } from "../contexts/I18nContext";
-import { useShift } from "../contexts/ShiftContext";
+import { useContext } from "react";
+import { AppContext } from "../context/AppContext";
 import { getShifts } from "../utils/database";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -25,7 +26,7 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export default function AddShiftModal({ visible, onClose, editShift }) {
   const { theme } = useTheme();
   const { t } = useI18n();
-  const { addShift, updateShift } = useShift();
+  const { handleAddShift, handleUpdateShift } = useContext(AppContext);
 
   const [name, setName] = useState("");
   const [departureTime, setDepartureTime] = useState(new Date());
@@ -293,9 +294,9 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
 
     try {
       if (editShift) {
-        await updateShift({ ...shiftData, id: editShift.id });
+        await handleUpdateShift({ ...shiftData, id: editShift.id });
       } else {
-        await addShift(shiftData);
+        await handleAddShift(shiftData);
       }
 
       onClose(true);
