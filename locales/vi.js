@@ -103,7 +103,6 @@ export const vi = {
   titleTooLong: "Tiêu đề quá dài (tối đa 100 ký tự)",
   contentRequired: "Nội dung không được để trống",
   contentTooLong: "Nội dung quá dài (tối đa 300 ký tự)",
-  selectAtLeastOneDay: "Vui lòng chọn ít nhất một ngày",
   noteAlreadyExists: "Ghi chú có tiêu đề và nội dung này đã tồn tại",
   deleteNoteConfirmation: "Bạn có chắc chắn muốn xóa ghi chú này?",
   saveNoteConfirmation: "Lưu ghi chú này?",

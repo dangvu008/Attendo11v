@@ -1,66 +1,74 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Alert } from "react-native"
-import { useNavigation, useFocusEffect } from "@react-navigation/native"
-import { Ionicons, Feather } from "@expo/vector-icons"
-import { format } from "date-fns"
-import { useTheme } from "../contexts/ThemeContext"
-import { useI18n } from "../contexts/I18nContext"
-import { useShift } from "../contexts/ShiftContext"
-import { useWorkStatus } from "../contexts/WorkStatusContext"
-import ActionButton from "../components/ActionButton"
-import WeeklyStatus from "../components/WeeklyStatus"
-import Notes from "../components/Notes"
-import AddNoteModal from "../components/AddNoteModal"
-import WeatherForecast from "../components/WeatherForecast"
-import { saveWorkLog, getWorkLogs } from "../utils/database"
+import { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  RefreshControl,
+  Alert,
+} from "react-native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { Ionicons, Feather } from "@expo/vector-icons";
+import { format } from "date-fns";
+import { useTheme } from "../contexts/ThemeContext";
+import { useI18n } from "../contexts/I18nContext";
+import { useShift } from "../contexts/ShiftContext";
+import { useWorkStatus } from "../contexts/WorkStatusContext";
+import ActionButton from "../components/ActionButton";
+import WeeklyStatus from "../components/WeeklyStatus";
+import Notes from "../components/Notes";
+import AddNoteModal from "../components/AddNoteModal";
+import WeatherForecast from "../components/WeatherForecast";
+import { saveWorkLog, getWorkLogs } from "../utils/database";
 
 export default function HomeScreen() {
-  const navigation = useNavigation()
-  const { theme } = useTheme()
-  const { t } = useI18n()
-  const { currentShift } = useShift()
-  const { workStatus, updateWorkStatus, resetWorkStatus } = useWorkStatus()
+  const navigation = useNavigation();
+  const { theme } = useTheme();
+  const { t } = useI18n();
+  const { currentShift } = useShift();
+  const { workStatus, updateWorkStatus, resetWorkStatus } = useWorkStatus();
 
-  const [currentTime, setCurrentTime] = useState(new Date())
-  const [refreshing, setRefreshing] = useState(false)
-  const [showAddNote, setShowAddNote] = useState(false)
-  const [workLogs, setWorkLogs] = useState([])
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [refreshing, setRefreshing] = useState(false);
+  const [showAddNote, setShowAddNote] = useState(false);
+  const [workLogs, setWorkLogs] = useState([]);
 
   // Update current time every minute
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 60000)
+      setCurrentTime(new Date());
+    }, 60000);
 
-    return () => clearInterval(timer)
-  }, [])
+    return () => clearInterval(timer);
+  }, []);
 
   // Load work logs when screen is focused
   useFocusEffect(
     useCallback(() => {
-      loadWorkLogs()
-    }, []),
-  )
+      loadWorkLogs();
+    }, [])
+  );
 
   const loadWorkLogs = async () => {
     try {
-      const logs = await getWorkLogs()
-      setWorkLogs(logs)
+      const logs = await getWorkLogs();
+      setWorkLogs(logs);
     } catch (error) {
-      console.error("Failed to load work logs:", error)
+      console.error("Failed to load work logs:", error);
     }
-  }
+  };
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await loadWorkLogs()
-    setRefreshing(false)
-  }, [])
+    setRefreshing(true);
+    await loadWorkLogs();
+    setRefreshing(false);
+  }, []);
 
   const handleActionButtonPress = async (action) => {
-    const timestamp = new Date()
+    const timestamp = new Date();
 
     try {
       // Save to database
@@ -68,18 +76,18 @@ export default function HomeScreen() {
         action,
         timestamp: timestamp.toISOString(),
         shiftId: currentShift?.id,
-      })
+      });
 
       // Update UI state
-      updateWorkStatus(action, timestamp)
+      updateWorkStatus(action, timestamp);
 
       // Reload work logs
-      await loadWorkLogs()
+      await loadWorkLogs();
     } catch (error) {
-      console.error("Failed to save work log:", error)
-      Alert.alert(t("error"), t("failedToSaveWorkLog"))
+      console.error("Failed to save work log:", error);
+      Alert.alert(t("error"), t("failedToSaveWorkLog"));
     }
-  }
+  };
 
   const handleResetStatus = () => {
     Alert.alert(t("confirm"), t("resetStatusConfirmation"), [
@@ -90,12 +98,12 @@ export default function HomeScreen() {
       {
         text: t("reset"),
         onPress: async () => {
-          resetWorkStatus()
-          await loadWorkLogs()
+          resetWorkStatus();
+          await loadWorkLogs();
         },
       },
-    ])
-  }
+    ]);
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -163,12 +171,6 @@ export default function HomeScreen() {
       alignItems: "center",
       marginVertical: 24,
     },
-    statusText: {
-      fontSize: 16,
-      color: theme.colors.textSecondary,
-      marginTop: 8,
-      textAlign: "center",
-    },
     statusHistory: {
       marginTop: 8,
     },
@@ -209,20 +211,32 @@ export default function HomeScreen() {
       color: "white",
       marginLeft: 4,
     },
-  })
+  });
 
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
     >
       <View style={styles.header}>
         <Text style={styles.title}>{t("timeManager")}</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate("Settings")}>
-            <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate("Settings")}
+          >
+            <Ionicons
+              name="settings-outline"
+              size={24}
+              color={theme.colors.text}
+            />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate("Statistics")}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate("Statistics")}
+          >
             <Ionicons name="stats-chart" size={24} color={theme.colors.text} />
           </TouchableOpacity>
         </View>
@@ -236,7 +250,12 @@ export default function HomeScreen() {
       {currentShift && (
         <View style={styles.shiftContainer}>
           <View style={styles.shiftInfo}>
-            <Ionicons name="calendar-outline" size={24} color={theme.colors.primary} style={styles.shiftIcon} />
+            <Ionicons
+              name="calendar-outline"
+              size={24}
+              color={theme.colors.primary}
+              style={styles.shiftIcon}
+            />
             <View>
               <Text style={styles.shiftName}>{currentShift.name}</Text>
               <Text style={styles.shiftTime}>
@@ -251,23 +270,30 @@ export default function HomeScreen() {
       <WeatherForecast />
 
       <View style={styles.actionButtonContainer}>
-        <ActionButton status={workStatus.status} onPress={handleActionButtonPress} onReset={handleResetStatus} />
+        <ActionButton
+          status={workStatus.status}
+          onPress={handleActionButtonPress}
+          onReset={handleResetStatus}
+        />
 
         {workStatus.status !== "idle" && (
           <View style={styles.statusHistory}>
             {workStatus.goToWorkTime && (
               <Text style={styles.historyItem}>
-                {t("goneToWork")} {format(new Date(workStatus.goToWorkTime), "HH:mm")}
+                {t("goneToWork")}{" "}
+                {format(new Date(workStatus.goToWorkTime), "HH:mm")}
               </Text>
             )}
             {workStatus.clockInTime && (
               <Text style={styles.historyItem}>
-                {t("clockedIn")} {format(new Date(workStatus.clockInTime), "HH:mm")}
+                {t("clockedIn")}{" "}
+                {format(new Date(workStatus.clockInTime), "HH:mm")}
               </Text>
             )}
             {workStatus.clockOutTime && (
               <Text style={styles.historyItem}>
-                {t("clockedOut")} {format(new Date(workStatus.clockOutTime), "HH:mm")}
+                {t("clockedOut")}{" "}
+                {format(new Date(workStatus.clockOutTime), "HH:mm")}
               </Text>
             )}
           </View>
@@ -285,7 +311,10 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t("notes")}</Text>
-          <TouchableOpacity style={styles.addButton} onPress={() => setShowAddNote(true)}>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setShowAddNote(true)}
+          >
             <Feather name="plus" size={16} color="white" />
             <Text style={styles.addButtonText}>{t("addNote")}</Text>
           </TouchableOpacity>
@@ -293,8 +322,10 @@ export default function HomeScreen() {
         <Notes />
       </View>
 
-      <AddNoteModal visible={showAddNote} onClose={() => setShowAddNote(false)} />
+      <AddNoteModal
+        visible={showAddNote}
+        onClose={() => setShowAddNote(false)}
+      />
     </ScrollView>
-  )
+  );
 }
-

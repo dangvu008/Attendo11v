@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -60,7 +60,7 @@ export default function WeatherForecast() {
     }
   }, [weatherData, currentShift, alertSettings.enabled, checkExtremeWeather]);
 
-  const initWeatherData = async () => {
+  const initWeatherData = useCallback(async () => {
     try {
       // Kiểm tra quyền truy cập vị trí
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -81,7 +81,7 @@ export default function WeatherForecast() {
       setError(t("weatherInitError"));
       setLoading(false);
     }
-  };
+  }, [t, loadWeatherData]);
 
   const loadAlertSettings = async () => {
     try {
@@ -112,15 +112,27 @@ export default function WeatherForecast() {
     }
   };
 
-  const refreshWeatherData = async () => {
+  const parseTimeString = (timeString) => {
+    const [hours, minutes] = timeString.split(":").map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  };
+
+  const isWithinHour = (currentTime, targetTime) => {
+    const diff = Math.abs(currentTime - targetTime);
+    return diff <= 60 * 60 * 1000; // 1 giờ tính bằng mili giây
+  };
+
+  const refreshWeatherData = useCallback(async () => {
     if (location) {
       await loadWeatherData(location);
     } else {
       await initWeatherData();
     }
-  };
+  }, [location, loadWeatherData, initWeatherData]);
 
-  const checkExtremeWeather = () => {
+  const checkExtremeWeather = useCallback(() => {
     if (!weatherData || !currentShift) return;
 
     const now = new Date();
@@ -179,19 +191,14 @@ export default function WeatherForecast() {
     } else {
       setShowAlert(false);
     }
-  };
-
-  const parseTimeString = (timeString) => {
-    const [hours, minutes] = timeString.split(":").map(Number);
-    const date = new Date();
-    date.setHours(hours, minutes, 0, 0);
-    return date;
-  };
-
-  const isWithinHour = (currentTime, targetTime) => {
-    const diff = Math.abs(currentTime - targetTime);
-    return diff <= 60 * 60 * 1000; // 1 giờ tính bằng mili giây
-  };
+  }, [
+    weatherData,
+    currentShift,
+    alertSettings,
+    t,
+    parseTimeString,
+    isWithinHour,
+  ]);
 
   const toggleAlertSetting = async (setting) => {
     const newSettings = {

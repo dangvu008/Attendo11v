@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -122,7 +122,7 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
     });
   };
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors = {
       title: null,
       content: null,
@@ -168,7 +168,14 @@ export default function AddNoteModal({ visible, onClose, editNote }) {
 
     // Return true if no errors
     return !Object.values(newErrors).some((error) => error !== null);
-  };
+  }, [
+    title,
+    content,
+    explicitReminderDays,
+    associatedShiftIds,
+    existingNotes,
+    t,
+  ]);
 
   const handleSave = async () => {
     // Validate form before saving

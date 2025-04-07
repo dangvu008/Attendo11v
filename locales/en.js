@@ -102,7 +102,6 @@ export const en = {
   titleTooLong: "Title is too long (max 100 characters)",
   contentRequired: "Content is required",
   contentTooLong: "Content is too long (max 300 characters)",
-  selectAtLeastOneDay: "Please select at least one day",
   noteAlreadyExists: "A note with this title and content already exists",
   deleteNoteConfirmation: "Are you sure you want to delete this note?",
   saveNoteConfirmation: "Save this note?",

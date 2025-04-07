@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -34,9 +34,9 @@ export default function StatisticsScreen() {
 
   useEffect(() => {
     loadWorkLogs();
-  }, [selectedMonth, loadWorkLogs]);
+  }, [loadWorkLogs]);
 
-  const loadWorkLogs = async () => {
+  const loadWorkLogs = useCallback(async () => {
     try {
       const start = startOfMonth(selectedMonth);
       const end = endOfMonth(selectedMonth);
@@ -49,9 +49,9 @@ export default function StatisticsScreen() {
     } catch (error) {
       console.error("Failed to load work logs:", error);
     }
-  };
+  }, [selectedMonth, generateMonthlyStats]);
 
-  const generateMonthlyStats = (logs, start, end) => {
+  const generateMonthlyStats = useCallback((logs, start, end) => {
     const daysInMonth = eachDayOfInterval({ start, end });
 
     const stats = daysInMonth.map((day) => {
@@ -90,7 +90,7 @@ export default function StatisticsScreen() {
     });
 
     setMonthlyStats(stats);
-  };
+  }, []);
 
   const getStatusColor = (status) => {
     switch (status) {

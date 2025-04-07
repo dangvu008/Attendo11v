@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -175,7 +175,7 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
     return endMinutes - startMinutes;
   };
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors = {
       name: null,
       departureTime: null,
@@ -207,19 +207,6 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
         }
       }
     }
-
-    // Helper function to calculate time difference in minutes, handling overnight shifts
-    const getTimeDifferenceInMinutes = (startDate, endDate) => {
-      const startMinutes = timeToMinutes(startDate);
-      let endMinutes = timeToMinutes(endDate);
-
-      // If end time is earlier than start time, assume it's the next day
-      if (endMinutes < startMinutes) {
-        endMinutes += 24 * 60; // Add 24 hours in minutes
-      }
-
-      return endMinutes - startMinutes;
-    };
 
     // Validate departure time vs start time
     const departureToStartDiff = getTimeDifferenceInMinutes(
@@ -263,7 +250,17 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
     setIsFormValid(isValid);
 
     return isValid;
-  };
+  }, [
+    name,
+    departureTime,
+    startTime,
+    endTime,
+    officeEndTime,
+    selectedWeekdays,
+    existingShifts,
+    t,
+    timeToMinutes,
+  ]);
 
   const handleSave = async () => {
     // Final validation before saving
