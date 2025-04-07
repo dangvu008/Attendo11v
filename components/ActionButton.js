@@ -297,19 +297,6 @@ export default function ActionButton() {
       color: theme.colors.textSecondary,
       marginBottom: 4,
     },
-    actionButton: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: theme.colors.primary,
-      elevation: 8,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-    },
   });
 
   // Tính toán vị trí cho các nút tùy chọn

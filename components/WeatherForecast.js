@@ -94,35 +94,38 @@ export default function WeatherForecast() {
     }
   };
 
-  const loadWeatherData = async (locationData) => {
-    try {
-      setLoading(true);
-      setError(null);
+  const loadWeatherData = useCallback(
+    async (locationData) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      const data = await fetchWeatherData(
-        locationData?.coords.latitude,
-        locationData?.coords.longitude
-      );
-      setWeatherData(data);
-    } catch (error) {
-      console.error("Failed to load weather data:", error);
-      setError(t("weatherLoadError"));
-    } finally {
-      setLoading(false);
-    }
-  };
+        const data = await fetchWeatherData(
+          locationData?.coords.latitude,
+          locationData?.coords.longitude
+        );
+        setWeatherData(data);
+      } catch (error) {
+        console.error("Failed to load weather data:", error);
+        setError(t("weatherLoadError"));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [t]
+  );
 
-  const parseTimeString = (timeString) => {
+  const parseTimeString = useCallback((timeString) => {
     const [hours, minutes] = timeString.split(":").map(Number);
     const date = new Date();
     date.setHours(hours, minutes, 0, 0);
     return date;
-  };
+  }, []);
 
-  const isWithinHour = (currentTime, targetTime) => {
+  const isWithinHour = useCallback((currentTime, targetTime) => {
     const diff = Math.abs(currentTime - targetTime);
     return diff <= 60 * 60 * 1000; // 1 giờ tính bằng mili giây
-  };
+  }, []);
 
   const refreshWeatherData = useCallback(async () => {
     if (location) {
