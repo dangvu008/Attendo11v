@@ -162,19 +162,6 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
     return date.getHours() * 60 + date.getMinutes();
   };
 
-  // Helper function to calculate time difference in minutes, handling overnight shifts
-  const getTimeDifferenceInMinutes = (startDate, endDate) => {
-    const startMinutes = timeToMinutes(startDate);
-    let endMinutes = timeToMinutes(endDate);
-
-    // If end time is earlier than start time, assume it's the next day
-    if (endMinutes < startMinutes) {
-      endMinutes += 24 * 60; // Add 24 hours in minutes
-    }
-
-    return endMinutes - startMinutes;
-  };
-
   const validateForm = useCallback(() => {
     const newErrors = {
       name: null,
@@ -207,6 +194,19 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
         }
       }
     }
+
+    // Helper function to calculate time difference in minutes, handling overnight shifts
+    const getTimeDifferenceInMinutes = (startDate, endDate) => {
+      const startMinutes = timeToMinutes(startDate);
+      let endMinutes = timeToMinutes(endDate);
+
+      // If end time is earlier than start time, assume it's the next day
+      if (endMinutes < startMinutes) {
+        endMinutes += 24 * 60; // Add 24 hours in minutes
+      }
+
+      return endMinutes - startMinutes;
+    };
 
     // Validate departure time vs start time
     const departureToStartDiff = getTimeDifferenceInMinutes(
@@ -259,7 +259,7 @@ export default function AddShiftModal({ visible, onClose, editShift }) {
     selectedWeekdays,
     existingShifts,
     t,
-    getTimeDifferenceInMinutes,
+    timeToMinutes,
   ]);
 
   const handleSave = async () => {
