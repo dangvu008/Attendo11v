@@ -201,16 +201,7 @@ export const WeatherProvider = ({ children }) => {
         console.error("Lỗi kiểm tra thời tiết cho ca làm việc:", error);
       }
     },
-    [
-      alertSettings.enabled,
-      t,
-      hasShiftBeenAlerted,
-      saveWeatherAlertRecord,
-      sendWeatherAlert,
-      generateWeatherAlertMessage,
-      checkExtremeWeatherConditions,
-      getForecastForTime,
-    ]
+    [alertSettings, t]
   );
 
   // Xử lý khi người dùng đóng cảnh báo

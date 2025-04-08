@@ -376,16 +376,17 @@ export default function WeatherForecast() {
 
   // Chuyển đổi condition sang weather icon và xác định thời gian trong ngày
   const getWeatherIconClass = (condition, time = null) => {
-    // Kiểm tra xem hiện tại là ngày hay đêm dựa vào thời gian được truyền vào
     const currentHour = time
       ? new Date(time).getHours()
       : new Date().getHours();
-    const isDay = currentHour >= 6 && currentHour < 18; // Từ 6h sáng đến 6h tối là ban ngày
+    const isDay = currentHour >= 6 && currentHour < 18;
     const timeOfDay = isDay ? "day" : "night";
 
-    // Map điều kiện thời tiết sang tên icon
+    // Chuẩn hóa condition (chuyển sang chữ thường, bỏ dấu cách nếu cần)
+    const normalizedCondition = condition.toLowerCase().replace(/\s+/g, "-");
+
     let iconName = "";
-    switch (condition) {
+    switch (normalizedCondition) {
       case "clear":
         iconName = `clear-${timeOfDay}`;
         break;
@@ -393,34 +394,30 @@ export default function WeatherForecast() {
         iconName = `partly-cloudy-${timeOfDay}`;
         break;
       case "cloudy":
-        iconName = `cloudy-${timeOfDay}`;
+        iconName = `cloudy`; // Cloudy giống nhau cả ngày lẫn đêm
         break;
       case "rain":
-        iconName = `rain-${timeOfDay}`;
+        iconName = `rain`; // Rain giống nhau cả ngày lẫn đêm
         break;
       case "heavy-rain":
-        iconName = `heavy-rain-${timeOfDay}`;
+        iconName = `heavy-rain`; // Heavy Rain giống nhau cả ngày lẫn đêm
         break;
       case "thunderstorm":
-        iconName = `thunderstorm-${timeOfDay}`;
+        iconName = `thunderstorm`; // Thunderstorm giống nhau cả ngày lẫn đêm
         break;
       case "snow":
-        iconName = `snow-${timeOfDay}`;
+        iconName = `snow`; // Snow giống nhau cả ngày lẫn đêm
         break;
       case "fog":
-        iconName = `fog-${timeOfDay}`;
+        iconName = `fog`; // Fog giống nhau cả ngày lẫn đêm
         break;
       default:
-        // Fallback to generic day icon if condition is not recognized
+        // Fallback to generic day/night icon if condition is not recognized
         return weatherIcons[`partly-cloudy-${timeOfDay}`];
     }
 
     // Trả về icon tương ứng nếu có, ngược lại trả về icon generic
-    return (
-      weatherIcons[iconName] ||
-      weatherIcons[condition] ||
-      weatherIcons[`partly-cloudy-${timeOfDay}`]
-    );
+    return weatherIcons[iconName] || weatherIcons[`partly-cloudy-${timeOfDay}`];
   };
 
   if (loading) {

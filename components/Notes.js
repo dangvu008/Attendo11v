@@ -279,9 +279,6 @@ export default function Notes() {
       color: theme.colors.primary,
       fontWeight: "bold",
     },
-    cancelButton: {
-      marginLeft: 10,
-    },
   });
 
   const renderNoteItem = ({ item }) => (

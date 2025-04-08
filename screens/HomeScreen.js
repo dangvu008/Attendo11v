@@ -205,7 +205,6 @@ export default function HomeScreen() {
       color: theme.colors.text,
     },
     modalContent: {
-      padding: 20,
       borderRadius: 10,
     },
   });
