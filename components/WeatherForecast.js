@@ -466,8 +466,9 @@ export default function WeatherForecast() {
             <View key={index} style={styles.weatherItem}>
               <Text style={styles.weatherTime}>{item.time}</Text>
               <Image
-                source={getWeatherIconClass(item.condition, item.timestamp)}
+                source={weatherIcons[item.condition] || weatherIcons['partly-cloudy-day']}
                 style={styles.weatherIcon}
+                resizeMode="contain"
               />
               <Text style={styles.weatherTemp}>{item.temperature}°C</Text>
               <Text style={styles.weatherTime}>{t(item.condition)}</Text>

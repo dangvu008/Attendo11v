@@ -342,10 +342,14 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t("notes")}</Text>
             <TouchableOpacity
-              style={styles.addButton}
+              style={styles.iconButton}
               onPress={() => setShowAddNote(true)}
             >
-              <Feather name="plus" size={16} color="white" />
+              <Ionicons
+                name="add-circle-outline"
+                size={24}
+                color={theme.colors.primary}
+              />
             </TouchableOpacity>
           </View>
           <Notes />
