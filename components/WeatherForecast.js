@@ -338,11 +338,6 @@ export default function WeatherForecast() {
       color: "white",
       marginBottom: 4,
     },
-    alertCloseButton: {
-      position: "absolute",
-      top: 16,
-      right: 16,
-    },
     settingsContainer: {
       backgroundColor: theme.colors.card,
       padding: 16,
@@ -466,7 +461,7 @@ export default function WeatherForecast() {
             <View key={index} style={styles.weatherItem}>
               <Text style={styles.weatherTime}>{item.time}</Text>
               <Image
-                source={weatherIcons[item.condition] || weatherIcons['partly-cloudy-day']}
+                source={getWeatherIconClass(item.condition, item.timestamp)}
                 style={styles.weatherIcon}
                 resizeMode="contain"
               />

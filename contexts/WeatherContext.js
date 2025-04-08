@@ -1,4 +1,10 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  useCallback,
+} from "react";
 import {
   fetchWeatherData,
   getForecastForTime,
@@ -61,7 +67,7 @@ export const WeatherProvider = ({ children }) => {
   }, []);
 
   // Khởi tạo và cập nhật dữ liệu thời tiết
-  const initWeatherData = async () => {
+  const initWeatherData = useCallback(async () => {
     try {
       // Kiểm tra quyền truy cập vị trí
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -82,110 +88,130 @@ export const WeatherProvider = ({ children }) => {
       setError("Không thể lấy dữ liệu thời tiết");
       setLoading(false);
     }
-  };
+  }, [refreshWeatherData]);
 
   // Cập nhật dữ liệu thời tiết
-  const refreshWeatherData = async (locationData = location) => {
-    if (!locationData) return;
+  const refreshWeatherData = useCallback(
+    async (locationData = location) => {
+      if (!locationData) return;
 
-    try {
-      setLoading(true);
-      setError(null);
+      try {
+        setLoading(true);
+        setError(null);
 
-      const data = await fetchWeatherData(
-        locationData.coords.latitude,
-        locationData.coords.longitude
-      );
-
-      setWeatherData(data);
-      setLoading(false);
-
-      // Kiểm tra điều kiện thời tiết cho ca làm việc
-      if (activeShift) {
-        checkWeatherForActiveShift(data, activeShift);
-      }
-    } catch (error) {
-      console.error("Lỗi lấy dữ liệu thời tiết:", error);
-      setError("Không thể lấy dữ liệu thời tiết");
-      setLoading(false);
-    }
-  };
-
-  // Kiểm tra thời tiết cho ca làm việc hiện tại
-  const checkWeatherForActiveShift = async (weatherData, shift) => {
-    if (!weatherData || !shift || !alertSettings.enabled) return;
-
-    try {
-      // Kiểm tra xem ca làm việc này đã được cảnh báo chưa
-      const alreadyAlerted = await hasShiftBeenAlerted(
-        shift.date,
-        shift.departureTime
-      );
-      if (alreadyAlerted) return;
-
-      // Tính toán thời gian đi làm và tan làm
-      const departureTime = new Date(shift.date);
-      const [depHours, depMinutes] = shift.departureTime.split(":").map(Number);
-      departureTime.setHours(depHours, depMinutes, 0, 0);
-
-      const returnTime = new Date(shift.date);
-      const [retHours, retMinutes] = shift.endTime.split(":").map(Number);
-
-      // Xử lý ca qua đêm
-      if (
-        retHours < depHours ||
-        (retHours === depHours && retMinutes < depMinutes)
-      ) {
-        returnTime.setDate(returnTime.getDate() + 1);
-      }
-      returnTime.setHours(retHours, retMinutes, 0, 0);
-
-      // Lấy dự báo thời tiết cho thời điểm đi làm và tan làm
-      const departureForecast = getForecastForTime(weatherData, departureTime);
-      const returnForecast = getForecastForTime(weatherData, returnTime);
-
-      // Kiểm tra các điều kiện thời tiết cực đoan
-      const departureConditions = checkExtremeWeatherConditions(
-        departureForecast,
-        alertSettings
-      );
-      const returnConditions = checkExtremeWeatherConditions(
-        returnForecast,
-        alertSettings
-      );
-
-      // Nếu có điều kiện cực đoan, tạo thông báo cảnh báo
-      if (departureConditions.length > 0 || returnConditions.length > 0) {
-        // Tạo thông điệp cảnh báo tổng hợp
-        const alertMessage = generateWeatherAlertMessage(
-          departureConditions,
-          returnConditions,
-          departureTime,
-          returnTime,
-          t
+        const data = await fetchWeatherData(
+          locationData.coords.latitude,
+          locationData.coords.longitude
         );
 
-        if (alertMessage) {
-          setWeatherAlertMessage(alertMessage);
-          setShowWeatherAlert(true);
+        setWeatherData(data);
+        setLoading(false);
 
-          // Gửi thông báo
-          const notificationId = await sendWeatherAlert(
-            alertMessage,
-            departureTime
-          );
-          if (notificationId) {
-            setLastNotificationId(notificationId);
-          }
-
-          // Lưu lại bản ghi đã cảnh báo
-          await saveWeatherAlertRecord(shift.date, shift.departureTime);
+        // Kiểm tra điều kiện thời tiết cho ca làm việc
+        if (activeShift) {
+          checkWeatherForActiveShift(data, activeShift);
         }
+      } catch (error) {
+        console.error("Lỗi lấy dữ liệu thời tiết:", error);
+        setError("Không thể lấy dữ liệu thời tiết");
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Lỗi kiểm tra thời tiết cho ca làm việc:", error);
-    }
-  };
+    },
+    [location, activeShift, checkWeatherForActiveShift]
+  );
+
+  // Kiểm tra thời tiết cho ca làm việc hiện tại
+  const checkWeatherForActiveShift = useCallback(
+    async (weatherData, shift) => {
+      if (!weatherData || !shift || !alertSettings.enabled) return;
+
+      try {
+        // Kiểm tra xem ca làm việc này đã được cảnh báo chưa
+        const alreadyAlerted = await hasShiftBeenAlerted(
+          shift.date,
+          shift.departureTime
+        );
+        if (alreadyAlerted) return;
+
+        // Tính toán thời gian đi làm và tan làm
+        const departureTime = new Date(shift.date);
+        const [depHours, depMinutes] = shift.departureTime
+          .split(":")
+          .map(Number);
+        departureTime.setHours(depHours, depMinutes, 0, 0);
+
+        const returnTime = new Date(shift.date);
+        const [retHours, retMinutes] = shift.endTime.split(":").map(Number);
+
+        // Xử lý ca qua đêm
+        if (
+          retHours < depHours ||
+          (retHours === depHours && retMinutes < depMinutes)
+        ) {
+          returnTime.setDate(returnTime.getDate() + 1);
+        }
+        returnTime.setHours(retHours, retMinutes, 0, 0);
+
+        // Lấy dự báo thời tiết cho thời điểm đi làm và tan làm
+        const departureForecast = getForecastForTime(
+          weatherData,
+          departureTime
+        );
+        const returnForecast = getForecastForTime(weatherData, returnTime);
+
+        // Kiểm tra các điều kiện thời tiết cực đoan
+        const departureConditions = checkExtremeWeatherConditions(
+          departureForecast,
+          alertSettings
+        );
+        const returnConditions = checkExtremeWeatherConditions(
+          returnForecast,
+          alertSettings
+        );
+
+        // Nếu có điều kiện cực đoan, tạo thông báo cảnh báo
+        if (departureConditions.length > 0 || returnConditions.length > 0) {
+          // Tạo thông điệp cảnh báo tổng hợp
+          const alertMessage = generateWeatherAlertMessage(
+            departureConditions,
+            returnConditions,
+            departureTime,
+            returnTime,
+            t
+          );
+
+          if (alertMessage) {
+            setWeatherAlertMessage(alertMessage);
+            setShowWeatherAlert(true);
+
+            // Gửi thông báo
+            const notificationId = await sendWeatherAlert(
+              alertMessage,
+              departureTime
+            );
+            if (notificationId) {
+              setLastNotificationId(notificationId);
+            }
+
+            // Lưu lại bản ghi đã cảnh báo
+            await saveWeatherAlertRecord(shift.date, shift.departureTime);
+          }
+        }
+      } catch (error) {
+        console.error("Lỗi kiểm tra thời tiết cho ca làm việc:", error);
+      }
+    },
+    [
+      alertSettings.enabled,
+      t,
+      hasShiftBeenAlerted,
+      saveWeatherAlertRecord,
+      sendWeatherAlert,
+      generateWeatherAlertMessage,
+      checkExtremeWeatherConditions,
+      getForecastForTime,
+    ]
+  );
 
   // Xử lý khi người dùng đóng cảnh báo
   const dismissWeatherAlert = () => {
@@ -215,7 +241,7 @@ export const WeatherProvider = ({ children }) => {
   // Kiểm tra thời tiết cho ca làm việc hiện tại
   useEffect(() => {
     if (weatherData && currentShift) {
-      checkWeatherForActiveShift();
+      checkWeatherForActiveShift(weatherData, currentShift);
     }
   }, [weatherData, currentShift, checkWeatherForActiveShift]);
 

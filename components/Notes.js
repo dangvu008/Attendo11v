@@ -174,10 +174,6 @@ export default function Notes() {
       height: 40,
       justifyContent: "center",
     },
-    addButtonText: {
-      color: "white",
-      marginLeft: 4,
-    },
     emptyContainer: {
       alignItems: "center",
       justifyContent: "center",
@@ -282,6 +278,9 @@ export default function Notes() {
     showMoreText: {
       color: theme.colors.primary,
       fontWeight: "bold",
+    },
+    cancelButton: {
+      marginLeft: 10,
     },
   });
 

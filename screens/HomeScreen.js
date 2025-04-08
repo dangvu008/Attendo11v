@@ -204,19 +204,9 @@ export default function HomeScreen() {
       fontWeight: "bold",
       color: theme.colors.text,
     },
-    addButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: theme.colors.primary,
-      padding: 10,
-      borderRadius: 20,
-      width: 40,
-      height: 40,
-      justifyContent: "center",
-    },
-    addButtonText: {
-      color: "white",
-      marginLeft: 4,
+    modalContent: {
+      padding: 20,
+      borderRadius: 10,
     },
   });
 

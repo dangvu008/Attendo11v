@@ -176,32 +176,35 @@ export const vi = {
   noShift: "Không theo ca (sử dụng ngày đã chọn)",
 
   // Chuỗi dịch cho cảnh báo thời tiết
-  weatherAlert: "Cảnh báo thời tiết",
-  understood: "Đã hiểu",
-  additionallyAlert: "Ngoài ra,",
-  prepareAccordingly: "Hãy chuẩn bị phù hợng",
 
   // Chuỗi dịch cho các loại cảnh báo lúc đi làm
   heavyRainAlert:
-    "Dự báo có mưa to lúc đi làm (khoảng {{time}}), hãy mang theo áo mưa/ô.",
-  coldWeatherAlert:
-    "Dự báo nhiệt độ thấp (dưới 10°C) lúc đi làm (khoảng {{time}}), nên mặc ấm.",
-  hotWeatherAlert:
-    "Dự báo nắng nóng (trên 35°C) lúc đi làm (khoảng {{time}}), nên che chắn cẩn thận.",
-  stormWarningAlert:
-    "Dự báo có bão/dông lúc đi làm (khoảng {{time}}), cần thận trọng khi di chuyển.",
-
-  // Chuỗi dịch cho các loại cảnh báo lúc tan làm
-  heavyRainReturnAlert:
-    "Dự báo có mưa to lúc tan làm (khoảng {{time}}), hãy mang theo áo mưa/ô.",
-  coldWeatherReturnAlert:
-    "Dự báo nhiệt độ thấp (dưới 10°C) lúc tan làm (khoảng {{time}}), nên mặc ấm.",
-  hotWeatherReturnAlert:
-    "Dự báo nắng nóng (trên 35°C) lúc tan làm (khoảng {{time}}), nên che chắn cẩn thận.",
-  stormWarningReturnAlert:
-    "Dự báo có bão/dông lúc tan làm (khoảng {{time}}), cần thận trọng khi di chuyển.",
 
   // Cài đặt thời tiết
   soundEnabled: "Bật âm thanh cảnh báo",
   testSound: "Kiểm tra âm thanh",
+
+  shiftDetails: "Chi tiết ca làm việc",
+  editShift: "Sửa ca làm việc",
+  deleteShift: "Xóa ca làm việc",
+  confirmDeleteShift: "Xác nhận xóa ca làm việc",
+  deleteShiftMessage: "Bạn có chắc chắn muốn xóa ca làm việc này?",
+  shiftDeleted: "Đã xóa ca làm việc",
+  errorDeletingShift: "Lỗi xóa ca làm việc",
+  setAsActiveShift: "Đặt làm ca hiện tại",
+  confirmSetActiveShift: "Xác nhận đặt ca hiện tại",
+  setActiveShiftMessage:
+    "Đặt ca này làm ca hiện tại? Hành động này sẽ đặt lại lịch sử chấm công hôm nay.",
+  shiftSetAsActive: "Đã đặt ca làm việc hiện tại",
+  errorSettingActiveShift: "Lỗi đặt ca làm việc hiện tại",
+
+  // Weather Alerts
+  weatherAlertTitle: "Cảnh báo thời tiết",
+  // weatherAlert: "Cảnh báo: {condition} được dự báo vào lúc {time}.",
+  // understood: "Đã hiểu",
+  // additionallyAlert: "Ngoài ra, còn có {condition} vào lúc {time}.",
+  // prepareAccordingly: "Vui lòng chuẩn bị phù hợp.",
+
+  // Statistics Screen
+  statisticsTitle: "Thống kê",
 };

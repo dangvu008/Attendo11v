@@ -28,7 +28,7 @@ import { I18nProvider } from "./contexts/I18nContext";
 import { ShiftProvider } from "./contexts/ShiftContext";
 import { WorkStatusProvider } from "./contexts/WorkStatusContext";
 import { DatabaseProvider } from "./contexts/DatabaseContext";
-import { AppProvider } from "./contexts/AppContext";
+import { AppProvider } from "./context/AppContext";
 
 // Import utils
 import { initializeDatabase } from "./utils/database";
