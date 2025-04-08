@@ -28,6 +28,7 @@ import { I18nProvider } from "./contexts/I18nContext";
 import { ShiftProvider } from "./contexts/ShiftContext";
 import { WorkStatusProvider } from "./contexts/WorkStatusContext";
 import { DatabaseProvider } from "./contexts/DatabaseContext";
+import { AppProvider } from "./contexts/AppContext";
 
 // Import utils
 import { initializeDatabase } from "./utils/database";
@@ -73,37 +74,39 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ThemeProvider>
-          <I18nProvider>
-            <DatabaseProvider>
-              <ShiftProvider>
-                <WeatherProvider>
-                  <WorkStatusProvider>
-                    <NavigationContainer>
-                      <Stack.Navigator
-                        initialRouteName="Home"
-                        screenOptions={{
-                          headerShown: false,
-                        }}
-                      >
-                        <Stack.Screen name="Home" component={HomeScreen} />
-                        <Stack.Screen
-                          name="Settings"
-                          component={SettingsScreen}
-                        />
-                        <Stack.Screen
-                          name="Statistics"
-                          component={StatisticsScreen}
-                        />
-                      </Stack.Navigator>
-                    </NavigationContainer>
-                    <StatusBar style="auto" />
-                  </WorkStatusProvider>
-                </WeatherProvider>
-              </ShiftProvider>
-            </DatabaseProvider>
-          </I18nProvider>
-        </ThemeProvider>
+        <AppProvider>
+          <ThemeProvider>
+            <I18nProvider>
+              <DatabaseProvider>
+                <ShiftProvider>
+                  <WeatherProvider>
+                    <WorkStatusProvider>
+                      <NavigationContainer>
+                        <Stack.Navigator
+                          initialRouteName="Home"
+                          screenOptions={{
+                            headerShown: false,
+                          }}
+                        >
+                          <Stack.Screen name="Home" component={HomeScreen} />
+                          <Stack.Screen
+                            name="Settings"
+                            component={SettingsScreen}
+                          />
+                          <Stack.Screen
+                            name="Statistics"
+                            component={StatisticsScreen}
+                          />
+                        </Stack.Navigator>
+                      </NavigationContainer>
+                      <StatusBar style="auto" />
+                    </WorkStatusProvider>
+                  </WeatherProvider>
+                </ShiftProvider>
+              </DatabaseProvider>
+            </I18nProvider>
+          </ThemeProvider>
+        </AppProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
