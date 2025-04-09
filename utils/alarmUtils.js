@@ -5,23 +5,23 @@
  * It uses Expo Notifications for notification features and Vibration for feedback.
  */
 
-import * as Notifications from "expo-notifications"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import * as BackgroundFetch from "expo-background-fetch"
-import * as TaskManager from "expo-task-manager"
-import { Platform, Vibration } from "react-native"
-import * as KeepAwake from "expo-keep-awake"
-import { STORAGE_KEYS } from "./database"
+import * as Notifications from "expo-notifications";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as BackgroundFetch from "expo-background-fetch";
+import * as TaskManager from "expo-task-manager";
+import { Platform, Vibration } from "react-native";
+import * as KeepAwake from "expo-keep-awake";
+import { STORAGE_KEYS } from "./database";
 
 // Define task names
-const BACKGROUND_ALARM_TASK = "BACKGROUND_ALARM_TASK"
-const ALARM_CHANNEL_ID = "attendo-alarms"
+const BACKGROUND_ALARM_TASK = "BACKGROUND_ALARM_TASK";
+const ALARM_CHANNEL_ID = "attendo-alarms";
 
 // Sound objects
-const alarmSound = null
-let isPlaying = false
-let activeAlarmId = null
-const vibrationInterval = null
+const alarmSound = null;
+let isPlaying = false;
+let activeAlarmId = null;
+const vibrationInterval = null;
 
 /**
  * Initialize alarm system
@@ -31,10 +31,10 @@ const vibrationInterval = null
 export const initializeAlarmSystem = async () => {
   try {
     // Request notification permissions
-    const { status } = await Notifications.requestPermissionsAsync()
+    const { status } = await Notifications.requestPermissionsAsync();
     if (status !== "granted") {
-      console.log("Notification permissions not granted")
-      return false
+      console.log("Notification permissions not granted");
+      return false;
     }
 
     // Create notification channel for Android
@@ -44,18 +44,18 @@ export const initializeAlarmSystem = async () => {
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#6a5acd",
-      })
+      });
     }
 
     // Register background task
-    await registerBackgroundAlarmTask()
+    await registerBackgroundAlarmTask();
 
-    return true
+    return true;
   } catch (error) {
-    console.error("Error initializing alarm system:", error)
-    return false
+    console.error("Error initializing alarm system:", error);
+    return false;
   }
-}
+};
 
 /**
  * Register background task for alarms
@@ -65,32 +65,36 @@ export const initializeAlarmSystem = async () => {
 const registerBackgroundAlarmTask = async () => {
   try {
     // Check if task is already registered
-    const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_ALARM_TASK)
+    const isRegistered = await TaskManager.isTaskRegisteredAsync(
+      BACKGROUND_ALARM_TASK
+    );
 
     if (!isRegistered) {
       // Define task
       TaskManager.defineTask(BACKGROUND_ALARM_TASK, async () => {
         try {
           // Check for upcoming alarms and schedule them
-          const result = await checkAndScheduleAlarms()
-          return result ? BackgroundFetch.BackgroundFetchResult.NewData : BackgroundFetch.BackgroundFetchResult.NoData
+          const result = await checkAndScheduleAlarms();
+          return result
+            ? BackgroundFetch.BackgroundFetchResult.NewData
+            : BackgroundFetch.BackgroundFetchResult.NoData;
         } catch (error) {
-          console.error("Error in background alarm task:", error)
-          return BackgroundFetch.BackgroundFetchResult.Failed
+          console.error("Error in background alarm task:", error);
+          return BackgroundFetch.BackgroundFetchResult.Failed;
         }
-      })
+      });
 
       // Register background fetch
       await BackgroundFetch.registerTaskAsync(BACKGROUND_ALARM_TASK, {
         minimumInterval: 15 * 60, // 15 minutes
         stopOnTerminate: false,
         startOnBoot: true,
-      })
+      });
     }
   } catch (error) {
-    console.error("Error registering background alarm task:", error)
+    console.error("Error registering background alarm task:", error);
   }
-}
+};
 
 /**
  * Check for upcoming alarms and schedule them
@@ -100,8 +104,8 @@ const registerBackgroundAlarmTask = async () => {
 const checkAndScheduleAlarms = async () => {
   // Implementation will depend on your app's specific needs
   // This is a placeholder for the actual implementation
-  return false
-}
+  return false;
+};
 
 /**
  * Schedule an alarm
@@ -115,27 +119,38 @@ const checkAndScheduleAlarms = async () => {
  * @param {string} options.identifier - Optional unique identifier for the notification
  * @returns {Promise<string>} - Alarm ID
  */
-export const scheduleAlarm = async ({ title, body, triggerTime, type, data = {}, identifier = null }) => {
+export const scheduleAlarm = async ({
+  title,
+  body,
+  triggerTime,
+  type,
+  data = {},
+  identifier = null,
+}) => {
   try {
     // Get user settings
-    const settingsStr = await AsyncStorage.getItem(STORAGE_KEYS.USER_SETTINGS)
-    const settings = settingsStr ? JSON.parse(settingsStr) : {}
-    const soundEnabled = settings.soundEnabled !== undefined ? settings.soundEnabled : true
-    const vibrationEnabled = settings.vibrationEnabled !== undefined ? settings.vibrationEnabled : true
+    const settingsStr = await AsyncStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
+    const settings = settingsStr ? JSON.parse(settingsStr) : {};
+    const soundEnabled =
+      settings.soundEnabled !== undefined ? settings.soundEnabled : true;
+    const vibrationEnabled =
+      settings.vibrationEnabled !== undefined
+        ? settings.vibrationEnabled
+        : true;
 
     // Calculate trigger time in seconds
-    const now = new Date()
-    const triggerAt = triggerTime.getTime()
+    const now = new Date();
+    const triggerAt = triggerTime.getTime();
 
     // If trigger time is in the past, don't schedule
     if (triggerAt <= now.getTime()) {
-      console.log("Alarm trigger time is in the past, not scheduling")
-      return null
+      console.log("Alarm trigger time is in the past, not scheduling");
+      return null;
     }
 
     // If an identifier is provided, cancel any existing notification with this ID
     if (identifier) {
-      await Notifications.cancelScheduledNotificationAsync(identifier)
+      await Notifications.cancelScheduledNotificationAsync(identifier);
     }
 
     // Schedule with Expo Notifications
@@ -156,15 +171,17 @@ export const scheduleAlarm = async ({ title, body, triggerTime, type, data = {},
         date: triggerAt,
       },
       identifier: identifier || undefined, // Use provided identifier or let system generate one
-    })
+    });
 
-    console.log(`Scheduled alarm for ${triggerTime.toLocaleString()}, ID: ${notificationId}`)
-    return notificationId
+    console.log(
+      `Scheduled alarm for ${triggerTime.toLocaleString()}, ID: ${notificationId}`
+    );
+    return notificationId;
   } catch (error) {
-    console.error("Error scheduling alarm:", error)
-    return null
+    console.error("Error scheduling alarm:", error);
+    return null;
   }
-}
+};
 
 /**
  * Trigger an alarm immediately
@@ -179,22 +196,26 @@ export const scheduleAlarm = async ({ title, body, triggerTime, type, data = {},
 export const triggerAlarmNow = async ({ title, body, type, data = {} }) => {
   try {
     // Get user settings
-    const settingsStr = await AsyncStorage.getItem(STORAGE_KEYS.USER_SETTINGS)
-    const settings = settingsStr ? JSON.parse(settingsStr) : {}
-    const soundEnabled = settings.soundEnabled !== undefined ? settings.soundEnabled : true
-    const vibrationEnabled = settings.vibrationEnabled !== undefined ? settings.vibrationEnabled : true
+    const settingsStr = await AsyncStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
+    const settings = settingsStr ? JSON.parse(settingsStr) : {};
+    const soundEnabled =
+      settings.soundEnabled !== undefined ? settings.soundEnabled : true;
+    const vibrationEnabled =
+      settings.vibrationEnabled !== undefined
+        ? settings.vibrationEnabled
+        : true;
 
     // Create a unique ID for this alarm
-    const alarmId = Date.now().toString()
-    activeAlarmId = alarmId
+    const alarmId = Date.now().toString();
+    activeAlarmId = alarmId;
 
     // Keep screen awake while alarm is active
-    KeepAwake.activateKeepAwake()
+    KeepAwake.activateKeepAwake();
 
     // Start vibration if enabled
     if (vibrationEnabled) {
       // Vibrate in a pattern (500ms on, 500ms off)
-      Vibration.vibrate([0, 500, 500], true)
+      Vibration.vibrate([0, 500, 500], true);
     }
 
     // Show notification
@@ -213,14 +234,14 @@ export const triggerAlarmNow = async ({ title, body, type, data = {} }) => {
         },
       },
       trigger: null, // Immediate notification
-    })
+    });
 
-    return identifier
+    return identifier;
   } catch (error) {
-    console.error("Error triggering alarm:", error)
-    return null
+    console.error("Error triggering alarm:", error);
+    return null;
   }
-}
+};
 
 /**
  * Stop the currently playing alarm
@@ -232,27 +253,27 @@ export const stopAlarm = async () => {
     // Stop sound
     if (alarmSound && isPlaying) {
       // In a real app, you would stop the sound here
-      isPlaying = false
+      isPlaying = false;
     }
 
     // Stop vibration
-    Vibration.cancel()
+    Vibration.cancel();
 
     // Allow screen to sleep again
-    KeepAwake.deactivateKeepAwake()
+    KeepAwake.deactivateKeepAwake();
 
     // Cancel the notification if it exists
     if (activeAlarmId) {
-      await Notifications.dismissNotificationAsync(activeAlarmId)
-      activeAlarmId = null
+      await Notifications.dismissNotificationAsync(activeAlarmId);
+      activeAlarmId = null;
     }
 
-    return true
+    return true;
   } catch (error) {
-    console.error("Error stopping alarm:", error)
-    return false
+    console.error("Error stopping alarm:", error);
+    return false;
   }
-}
+};
 
 /**
  * Cancel a scheduled alarm by ID
@@ -262,16 +283,16 @@ export const stopAlarm = async () => {
  */
 export const cancelAlarm = async (alarmId) => {
   try {
-    if (!alarmId) return false
+    if (!alarmId) return false;
 
-    await Notifications.cancelScheduledNotificationAsync(alarmId)
-    console.log(`Canceled alarm: ${alarmId}`)
-    return true
+    await Notifications.cancelScheduledNotificationAsync(alarmId);
+    console.log(`Canceled alarm: ${alarmId}`);
+    return true;
   } catch (error) {
-    console.error(`Error canceling alarm ${alarmId}:`, error)
-    return false
+    console.error(`Error canceling alarm ${alarmId}:`, error);
+    return false;
   }
-}
+};
 
 /**
  * Cancel all alarms of a specific type
@@ -283,14 +304,46 @@ export const cancelAlarmsByType = async (type) => {
   try {
     // For simplicity, we'll just cancel all notifications
     // In a real app, you would filter by type
-    await Notifications.cancelAllScheduledNotificationsAsync()
-    console.log(`Canceled all alarms of type: ${type}`)
-    return true
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    console.log(`Canceled all alarms of type: ${type}`);
+    return true;
   } catch (error) {
-    console.error(`Error canceling ${type} alarms:`, error)
-    return false
+    console.error(`Error canceling ${type} alarms:`, error);
+    return false;
   }
-}
+};
+
+/**
+ * Safely unregister the background alarm task
+ *
+ * @returns {Promise<boolean>} - True if successful or if task didn't exist
+ */
+export const unregisterBackgroundAlarmTask = async () => {
+  try {
+    // Check if task is already registered before attempting to unregister
+    const isRegistered = await TaskManager.isTaskRegisteredAsync(
+      BACKGROUND_ALARM_TASK
+    );
+
+    if (isRegistered) {
+      await BackgroundFetch.unregisterTaskAsync(BACKGROUND_ALARM_TASK);
+      console.log(`Successfully unregistered task: ${BACKGROUND_ALARM_TASK}`);
+      return true;
+    } else {
+      console.log(
+        `Task ${BACKGROUND_ALARM_TASK} not registered, no need to unregister`
+      );
+      return true;
+    }
+  } catch (error) {
+    // Log the error but don't throw it further
+    console.error(
+      `Error safely unregistering task ${BACKGROUND_ALARM_TASK}:`,
+      error
+    );
+    return false;
+  }
+};
 
 /**
  * Cancel all scheduled alarms
@@ -299,14 +352,14 @@ export const cancelAlarmsByType = async (type) => {
  */
 export const cancelAllAlarms = async () => {
   try {
-    await Notifications.cancelAllScheduledNotificationsAsync()
-    console.log("Canceled all alarms")
-    return true
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    console.log("Canceled all alarms");
+    return true;
   } catch (error) {
-    console.error("Error canceling all alarms:", error)
-    return false
+    console.error("Error canceling all alarms:", error);
+    return false;
   }
-}
+};
 
 /**
  * Handle alarm response
@@ -316,20 +369,19 @@ export const cancelAllAlarms = async () => {
  */
 export const handleAlarmResponse = async (notification) => {
   try {
-    const { type, alarmId } = notification.request.content.data || {}
+    const { type, alarmId } = notification.request.content.data || {};
 
-    if (!type) return false
+    if (!type) return false;
 
     // Stop the alarm
-    await stopAlarm()
+    await stopAlarm();
 
     // Log the response time
-    console.log(`Alarm response for ${type} at ${new Date().toISOString()}`)
+    console.log(`Alarm response for ${type} at ${new Date().toISOString()}`);
 
-    return true
+    return true;
   } catch (error) {
-    console.error("Error handling alarm response:", error)
-    return false
+    console.error("Error handling alarm response:", error);
+    return false;
   }
-}
-
+};

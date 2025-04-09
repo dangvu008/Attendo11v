@@ -32,6 +32,7 @@ import { AppProvider } from "./context/AppContext";
 
 // Import utils
 import { initializeDatabase } from "./utils/database";
+import { safelyUnregisterTask } from "./utils/taskManager";
 
 const Stack = createNativeStackNavigator();
 

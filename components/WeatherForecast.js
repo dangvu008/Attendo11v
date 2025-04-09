@@ -34,7 +34,7 @@ export default function WeatherForecast() {
   const [weatherCache, setWeatherCache] = useState({
     data: null,
     timestamp: null,
-    expiresIn: 15 * 60 * 1000 // 15 minutes cache
+    expiresIn: 15 * 60 * 1000, // 15 minutes cache
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,8 +58,11 @@ export default function WeatherForecast() {
       try {
         // Check cache first
         const now = Date.now();
-        if (weatherCache.data && weatherCache.timestamp && 
-            (now - weatherCache.timestamp) < weatherCache.expiresIn) {
+        if (
+          weatherCache.data &&
+          weatherCache.timestamp &&
+          now - weatherCache.timestamp < weatherCache.expiresIn
+        ) {
           setWeatherData(weatherCache.data);
           return;
         }
@@ -71,8 +74,8 @@ export default function WeatherForecast() {
         setError(null);
 
         // Thêm timeout cho request
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout')), 10000)
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Request timeout")), 10000)
         );
 
         const dataPromise = fetchWeatherData(
@@ -82,25 +85,27 @@ export default function WeatherForecast() {
 
         // Race giữa timeout và request thực tế
         const data = await Promise.race([dataPromise, timeoutPromise]);
-        
+
         // Update cache và state chỉ khi có dữ liệu mới hợp lệ
         if (data && Array.isArray(data) && data.length > 0) {
           setWeatherCache({
             data: data,
             timestamp: now,
-            expiresIn: 15 * 60 * 1000
+            expiresIn: 15 * 60 * 1000,
           });
           setWeatherData(data);
         } else {
-          throw new Error('Invalid weather data');
+          throw new Error("Invalid weather data");
         }
       } catch (error) {
         console.error("Failed to load weather data:", error);
         setError(t("weatherLoadError"));
-        
+
         // Sử dụng cache cũ nếu có lỗi và cache vẫn còn hợp lệ
-        if (weatherCache.data && 
-            (now - weatherCache.timestamp) < (weatherCache.expiresIn * 2)) {
+        if (
+          weatherCache.data &&
+          now - weatherCache.timestamp < weatherCache.expiresIn * 2
+        ) {
           setWeatherData(weatherCache.data);
         }
       } finally {
@@ -278,6 +283,7 @@ export default function WeatherForecast() {
     return () => {
       isSubscribed = false;
       clearInterval(refreshInterval);
+    };
   }, [initWeatherData, refreshWeatherData]);
 
   // Sử dụng useRef để lưu trữ timeout ID cho debounce
@@ -301,7 +307,13 @@ export default function WeatherForecast() {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [weatherData?.timestamp, alertSettings.enabled, currentShift?.departureTime, currentShift?.endTime, checkExtremeWeather]);
+  }, [
+    weatherData?.timestamp,
+    alertSettings.enabled,
+    currentShift?.departureTime,
+    currentShift?.endTime,
+    checkExtremeWeather,
+  ]);
 
   // Cleanup khi component unmount
   useEffect(() => {
@@ -310,6 +322,10 @@ export default function WeatherForecast() {
       stopAlarm();
     };
   }, []);
+
+  // Import the safelyUnregisterTask function from taskManager.js
+  // to use in other components that need to unregister the background task
+  // This will prevent the "Task 'BACKGROUND_ALARM_TASK' not found" error
 
   const styles = StyleSheet.create({
     container: {
