@@ -31,6 +31,11 @@ export default function WeatherForecast() {
   const { currentShift } = useShift();
 
   const [weatherData, setWeatherData] = useState(null);
+  const [weatherCache, setWeatherCache] = useState({
+    data: null,
+    timestamp: null,
+    expiresIn: 15 * 60 * 1000 // 15 minutes cache
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAlert, setShowAlert] = useState(false);
@@ -51,22 +56,58 @@ export default function WeatherForecast() {
   const loadWeatherData = useCallback(
     async (locationData) => {
       try {
+        // Check cache first
+        const now = Date.now();
+        if (weatherCache.data && weatherCache.timestamp && 
+            (now - weatherCache.timestamp) < weatherCache.expiresIn) {
+          setWeatherData(weatherCache.data);
+          return;
+        }
+
+        // Nếu đang loading, không gọi API mới
+        if (loading) return;
+
         setLoading(true);
         setError(null);
 
-        const data = await fetchWeatherData(
+        // Thêm timeout cho request
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 10000)
+        );
+
+        const dataPromise = fetchWeatherData(
           locationData?.coords.latitude,
           locationData?.coords.longitude
         );
-        setWeatherData(data);
+
+        // Race giữa timeout và request thực tế
+        const data = await Promise.race([dataPromise, timeoutPromise]);
+        
+        // Update cache và state chỉ khi có dữ liệu mới hợp lệ
+        if (data && Array.isArray(data) && data.length > 0) {
+          setWeatherCache({
+            data: data,
+            timestamp: now,
+            expiresIn: 15 * 60 * 1000
+          });
+          setWeatherData(data);
+        } else {
+          throw new Error('Invalid weather data');
+        }
       } catch (error) {
         console.error("Failed to load weather data:", error);
         setError(t("weatherLoadError"));
+        
+        // Sử dụng cache cũ nếu có lỗi và cache vẫn còn hợp lệ
+        if (weatherCache.data && 
+            (now - weatherCache.timestamp) < (weatherCache.expiresIn * 2)) {
+          setWeatherData(weatherCache.data);
+        }
       } finally {
         setLoading(false);
       }
     },
-    [t]
+    [t, weatherCache, loading]
   );
 
   const initWeatherData = useCallback(async () => {
@@ -215,26 +256,52 @@ export default function WeatherForecast() {
   };
 
   useEffect(() => {
-    // Lấy vị trí và dữ liệu thời tiết khi component mount
-    initWeatherData();
+    let isSubscribed = true;
 
-    // Lấy cài đặt cảnh báo thời tiết
-    loadAlertSettings();
+    const initialize = async () => {
+      if (!isSubscribed) return;
+      // Lấy vị trí và dữ liệu thời tiết khi component mount
+      await initWeatherData();
+      // Lấy cài đặt cảnh báo thời tiết
+      await loadAlertSettings();
+    };
+
+    initialize();
 
     // Thiết lập cập nhật định kỳ (30 phút)
     const refreshInterval = setInterval(() => {
-      refreshWeatherData();
+      if (isSubscribed) {
+        refreshWeatherData();
+      }
     }, 30 * 60 * 1000);
 
-    return () => clearInterval(refreshInterval);
+    return () => {
+      isSubscribed = false;
+      clearInterval(refreshInterval);
   }, [initWeatherData, refreshWeatherData]);
+
+  // Sử dụng useRef để lưu trữ timeout ID cho debounce
+  const debounceTimerRef = useRef(null);
 
   // Kiểm tra điều kiện thời tiết cực đoan khi dữ liệu thời tiết hoặc ca làm việc thay đổi
   useEffect(() => {
     if (weatherData && alertSettings.enabled && currentShift) {
-      checkExtremeWeather();
+      // Clear timeout cũ nếu có
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      // Đặt timeout mới để debounce việc kiểm tra thời tiết
+      debounceTimerRef.current = setTimeout(() => {
+        checkExtremeWeather();
+      }, 500); // Đợi 500ms trước khi thực hiện kiểm tra
     }
-  }, [weatherData, alertSettings, currentShift, checkExtremeWeather]);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [weatherData?.timestamp, alertSettings.enabled, currentShift?.departureTime, currentShift?.endTime, checkExtremeWeather]);
 
   // Cleanup khi component unmount
   useEffect(() => {
