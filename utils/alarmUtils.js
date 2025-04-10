@@ -11,7 +11,8 @@ import * as BackgroundFetch from "expo-background-fetch";
 import * as TaskManager from "expo-task-manager";
 import { Platform, Vibration } from "react-native";
 import * as KeepAwake from "expo-keep-awake";
-import { STORAGE_KEYS } from "./database";
+import { STORAGE_KEYS } from "./STORAGE_KEYS";
+import { safelyUnregisterTask } from "./taskManager";
 
 // Define task names
 const BACKGROUND_ALARM_TASK = "BACKGROUND_ALARM_TASK";
@@ -320,21 +321,8 @@ export const cancelAlarmsByType = async (type) => {
  */
 export const unregisterBackgroundAlarmTask = async () => {
   try {
-    // Check if task is already registered before attempting to unregister
-    const isRegistered = await TaskManager.isTaskRegisteredAsync(
-      BACKGROUND_ALARM_TASK
-    );
-
-    if (isRegistered) {
-      await BackgroundFetch.unregisterTaskAsync(BACKGROUND_ALARM_TASK);
-      console.log(`Successfully unregistered task: ${BACKGROUND_ALARM_TASK}`);
-      return true;
-    } else {
-      console.log(
-        `Task ${BACKGROUND_ALARM_TASK} not registered, no need to unregister`
-      );
-      return true;
-    }
+    // Use the utility function to safely unregister the task
+    return await safelyUnregisterTask(BACKGROUND_ALARM_TASK);
   } catch (error) {
     // Log the error but don't throw it further
     console.error(
